@@ -1,0 +1,12 @@
+services:
+  libsql:
+    image: ghcr.io/tursodatabase/libsql-server:latest-arm
+    container_name: zenith-libsql
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data/libsql:/var/lib/sqld
+    environment:
+      - SQLD_NODE=primary
+      - SQLD_HTTP_AUTH=
