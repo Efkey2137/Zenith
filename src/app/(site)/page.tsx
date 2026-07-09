@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 export default function HomePage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-32 text-center">
