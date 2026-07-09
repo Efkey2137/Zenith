@@ -18,4 +18,5 @@ export default async function ChapterPage({
   if (!chapter) notFound();
 
   return <ChapterReader chapter={chapter} />;
+  
 }
