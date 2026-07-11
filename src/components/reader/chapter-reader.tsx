@@ -4,19 +4,31 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 
+interface AdjacentChapter {
+  slug: string;
+  title: string;
+}
+
 interface Chapter {
   slug: string;
-  sagaTitle: string;
   title: string;
   chapterNumber: number;
   content: string;
+  sagaTitle: string;
 }
 
-export function ChapterReader({ chapter }: { chapter: Chapter }) {
+export function ChapterReader({
+  chapter,
+  prevChapter,
+  nextChapter,
+}: {
+  chapter: Chapter;
+  prevChapter: AdjacentChapter | null;
+  nextChapter: AdjacentChapter | null;
+}) {
   const [progress, setProgress] = useState(0);
   const storageKey = `zenith:progress:${chapter.slug}`;
 
-  // Przywróć zapisaną pozycję czytania po wejściu na stronę
   useEffect(() => {
     const saved = localStorage.getItem(storageKey);
     if (saved) {
@@ -26,7 +38,6 @@ export function ChapterReader({ chapter }: { chapter: Chapter }) {
     }
   }, [storageKey]);
 
-  // Śledź scroll i zapisuj postęp na bieżąco
   useEffect(() => {
     function handleScroll() {
       const scrollTop = window.scrollY;
@@ -67,6 +78,29 @@ export function ChapterReader({ chapter }: { chapter: Chapter }) {
         <div className="prose prose-invert prose-zinc max-w-none prose-p:leading-relaxed prose-p:font-light">
           <ReactMarkdown>{chapter.content}</ReactMarkdown>
         </div>
+
+        <nav className="mt-16 pt-8 border-t border-border flex justify-between gap-4 text-sm">
+          {prevChapter ? (
+            <Link
+              href={`/chapters/${prevChapter.slug}`}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← {prevChapter.title}
+            </Link>
+          ) : (
+            <span />
+          )}
+          {nextChapter ? (
+            <Link
+              href={`/chapters/${nextChapter.slug}`}
+              className="text-muted-foreground hover:text-foreground transition-colors text-right"
+            >
+              {nextChapter.title} →
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
       </article>
     </>
   );

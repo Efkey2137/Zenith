@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getChapterBySlug, getAllChapterSlugs } from '@/lib/db/queries/chapters';
+import { getChapterBySlug, getAllChapterSlugs, getAdjacentChapters } from '@/lib/db/queries/chapters';
 import { ChapterReader } from '@/components/reader/chapter-reader';
 
 export async function generateStaticParams() {
@@ -17,6 +17,7 @@ export default async function ChapterPage({
 
   if (!chapter) notFound();
 
-  return <ChapterReader chapter={chapter} />;
-  
+  const { prev, next } = await getAdjacentChapters(chapter.sagaId, chapter.chapterNumber);
+
+  return <ChapterReader chapter={chapter} prevChapter={prev} nextChapter={next} />;
 }

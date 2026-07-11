@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { getAllChaptersGroupedBySaga } from '@/lib/db/queries/chapters';
+import { ReadingProgressBadge } from '@/components/reader/reading-progress-badge';
+
 
 export default async function ChaptersPage() {
   const sagasWithChapters = await getAllChaptersGroupedBySaga();
@@ -26,9 +28,10 @@ export default async function ChaptersPage() {
                     <span className="text-sm text-muted-foreground tabular-nums">
                       {String(chapter.chapterNumber).padStart(2, '0')}
                     </span>
-                    <span className="text-foreground group-hover:text-primary transition-colors">
+                    <span className="text-foreground group-hover:text-primary transition-colors flex-1">
                       {chapter.chapterTitle}
                     </span>
+                    <ReadingProgressBadge slug={chapter.chapterSlug} />
                   </Link>
                 </li>
               ))}

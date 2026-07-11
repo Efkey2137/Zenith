@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { chapters, sagas } from '@/lib/db/schema';
-import { asc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, lt } from 'drizzle-orm';
 
 export async function getAllChaptersGroupedBySaga() {
   const rows = await db
@@ -30,6 +30,7 @@ export async function getChapterBySlug(slug: string) {
       title: chapters.title,
       chapterNumber: chapters.chapterNumber,
       content: chapters.content,
+      sagaId: chapters.sagaId,
       sagaTitle: sagas.title,
     })
     .from(chapters)
@@ -41,4 +42,22 @@ export async function getChapterBySlug(slug: string) {
 
 export async function getAllChapterSlugs() {
   return db.select({ slug: chapters.slug }).from(chapters);
+}
+
+export async function getAdjacentChapters(sagaId: number, chapterNumber: number) {
+  const [prev] = await db
+    .select({ slug: chapters.slug, title: chapters.title })
+    .from(chapters)
+    .where(and(eq(chapters.sagaId, sagaId), lt(chapters.chapterNumber, chapterNumber)))
+    .orderBy(desc(chapters.chapterNumber))
+    .limit(1);
+
+  const [next] = await db
+    .select({ slug: chapters.slug, title: chapters.title })
+    .from(chapters)
+    .where(and(eq(chapters.sagaId, sagaId), gt(chapters.chapterNumber, chapterNumber)))
+    .orderBy(asc(chapters.chapterNumber))
+    .limit(1);
+
+  return { prev: prev ?? null, next: next ?? null };
 }
