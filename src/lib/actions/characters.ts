@@ -20,7 +20,7 @@ async function saveCharacterImage(file: File, slug: string): Promise<string> {
   await mkdir(uploadDir, { recursive: true });
   await writeFile(path.join(uploadDir, fileName), buffer);
 
-  return `/images/characters/${fileName}`;
+  return `https://ttogknzowyoeogr5.public.blob.vercel-storage.com/${fileName}`;
 }
 
 export async function createCharacterAction(formData: FormData): Promise<CharacterResult> {
