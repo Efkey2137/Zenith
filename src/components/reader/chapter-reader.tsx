@@ -1,5 +1,6 @@
 "use client";
 import {
+  memo,
   useEffect,
   useRef,
   useState,
@@ -28,6 +29,10 @@ interface Chapter {
   content: string;
   sagaTitle: string;
 }
+const ChapterText = memo(function ChapterText({ content }: { content: string }) {
+  return <ReactMarkdown>{content}</ReactMarkdown>;
+});
+
 export function ChapterReader({
   chapter,
   prevChapter,
@@ -257,7 +262,7 @@ export function ChapterReader({
             } as CSSProperties
           }
         >
-          <ReactMarkdown>{chapter.content}</ReactMarkdown>
+          <ChapterText content={chapter.content} />
         </div>
         <div className="mt-12">
           <button
