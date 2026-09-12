@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zenith
 
-## Getting Started
+Polskie kompendium powieści i czytnik w ciemnej, oszczędnej stylistyce. Next.js 16, React 19, Tailwind CSS, Drizzle, Turso i Vercel Blob.
 
-First, run the development server:
+## Funkcje
 
-```bash
+- Strona główna, nawigacja na telefonie i komputerze, ekrany błędu i braku strony.
+- Rozdziały: wyszukiwanie bez polskich znaków, filtrowanie sag, kolejność między sagami.
+- Czytnik: pamięć miejsca, zakładka dla każdego rozdziału, oznaczenie przeczytania, wielkość tekstu, interlinia, szerokość i jasny papier. Zapis pozostaje w danej przeglądarce; nie synchronizuje się między urządzeniami.
+- Postacie: wyszukiwanie, frakcje, portrety i biografie w Markdown.
+- Edytowalne sekcje Świat, System Mocy i Autor. Aplikacja nie generuje treści książki.
+- Panel autora: logowanie, tworzenie i edycja postaci i sag, import/aktualizacja rozdziałów oraz edycja sekcji z podglądem.
+
+## Uruchomienie lokalne
+
+Wymagany Node.js 24 LTS.
+
+```sh
+npm ci
+mkdir -p data
+cp .env.example .env.local
+# Ustaw ADMIN_PASSWORD: losowe hasło o długości przynajmniej 24 znaków.
+npm run db:init
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Domyślny adres bazy w przykładzie tworzy lokalny plik SQLite. `db:init` tworzy wyłącznie brakujące tabele, nie usuwa i nie nadpisuje treści. Skrypt można uruchamiać ponownie. Nie dodaje przykładowych postaci ani rozdziałów.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Jeśli lokalne ograniczenia systemu uniemożliwiają Turbopackowi tworzenie procesów lub portów, użyj `npm run dev -- --webpack` oraz `npm run build -- --webpack`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Vercel — przygotowanie do publikacji
 
-## Learn More
+Projekt jest połączony z repozytorium `Efkey2137/Zenith`. Gałęzie robocze służą do podglądu, `main` do produkcji.
 
-To learn more about Next.js, take a look at the following resources:
+1. Zachowaj istniejące `TURSO_DATABASE_URL` i `TURSO_AUTH_TOKEN`.
+2. Na istniejącej bazie tabela `pages` zostanie dodana automatycznie przy pierwszym zapisie sekcji przez zalogowanego autora. Do tego momentu sekcje wyświetlają stan pusty. Dla nowej bazy uruchom `npm run db:init`. Istniejące treści pozostają bez zmian. Nie używaj lokalnego `file:` jako bazy wdrożenia.
+3. Ustaw `ADMIN_PASSWORD` na losowe hasło o długości co najmniej 24 znaków, oddzielnie dla odpowiednich środowisk. Bez niego zapisy są zamknięte. Zmiana hasła unieważnia dotychczasowe sesje. Sesja trwa 12 godzin; cookie jest HttpOnly, SameSite=Strict, a w produkcji Secure.
+4. Podłącz istniejący **publiczny** magazyn Vercel Blob do Zenith. Przesyłanie używa `BLOB_READ_WRITE_TOKEN` albo `BLOB_STORE_ID` z Vercel OIDC. Kod zapisuje rzeczywisty URL zwrócony przez magazyn. Nie tworzy płatnych zasobów. Portrety: JPG/PNG/WebP do 2 MB; stare portrety nie są usuwane z magazynu przy wymianie.
+5. Zweryfikuj podgląd przed scaleniem zmian do `main`. Podgląd podłączony do tej samej bazy ma dostęp do tych samych treści: testuj zapisy na osobnej bazie.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Panel dostępny jest pod `/admin`. Publiczne strony nie wymagają konta. Każda operacja zapisu sprawdza sesję na serwerze. Nie umieszczaj hasła ani tokenów w kodzie, linkach ani opisie PR.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Import rozdziałów
 
-## Deploy on Vercel
+Utwórz sagę w panelu i użyj jej adresu w polu `saga`:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```md
+---
+title: Tytuł rozdziału
+chapterNumber: 1
+saga: adres-sagi
+slug: adres-rozdzialu
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Treść w Markdown.
+```
+
+Do 30 plików `.md` lub `.txt` jednocześnie, do 512 KB na plik i do 3 MB łącznie. Pole `slug` jest opcjonalne dla nowych rozdziałów. Przy aktualizacji zachowaj istniejący adres: ten sam adres nadpisuje tekst, tytuł i przypisanie do sagi. Tytuł może pochodzić z nazwy pliku. Numer jest nieujemną liczbą całkowitą; drugi adres z tym samym numerem w sadze zostanie odrzucony. Obsługiwany jest wyłącznie nagłówek YAML, także z BOM i końcami linii Windows.
+
+## Sprawdzenie
+
+```sh
+npm test
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Testy obejmują walidację importu, brak wykonywania nagłówków JavaScript, wyszukiwanie polskich znaków, uszkodzone dane czytnika, ważność sesji i nawigację między sagami. Test bazy używa osobnej bazy w pamięci. Dodatkowo należy sprawdzić w przeglądarce logowanie, zapisy formularzy, odświeżenie czytnika i widok mobilny.
+
+Pozostałe ostrzeżenia `npm audit` dotyczą starego pomocniczego esbuild w narzędziu `drizzle-kit`; nie uruchamiaj `db:studio` na publicznym interfejsie. Nie stosuj `audit fix --force`, które proponuje niezgodny downgrade tego narzędzia.

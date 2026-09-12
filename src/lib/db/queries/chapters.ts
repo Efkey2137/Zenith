@@ -1,9 +1,9 @@
-import { db } from '@/lib/db';
-import { chapters, sagas } from '@/lib/db/schema';
-import { and, asc, desc, eq, gt, lt } from 'drizzle-orm';
+import { getDb } from "@/lib/db";
+import { chapters, sagas } from "@/lib/db/schema";
+import { asc, eq } from "drizzle-orm";
 
 export async function getAllChaptersGroupedBySaga() {
-  const rows = await db
+  const rows = await getDb()
     .select({
       sagaTitle: sagas.title,
       sagaSlug: sagas.slug,
@@ -13,18 +13,27 @@ export async function getAllChaptersGroupedBySaga() {
     })
     .from(chapters)
     .innerJoin(sagas, eq(chapters.sagaId, sagas.id))
-    .orderBy(asc(sagas.order), asc(chapters.chapterNumber));
+    .orderBy(
+      asc(sagas.order),
+      asc(sagas.id),
+      asc(chapters.chapterNumber),
+      asc(chapters.id),
+    );
 
   const grouped = new Map<string, { title: string; chapters: typeof rows }>();
   for (const row of rows) {
-    if (!grouped.has(row.sagaSlug)) grouped.set(row.sagaSlug, { title: row.sagaTitle, chapters: [] });
+    if (!grouped.has(row.sagaSlug))
+      grouped.set(row.sagaSlug, { title: row.sagaTitle, chapters: [] });
     grouped.get(row.sagaSlug)!.chapters.push(row);
   }
-  return Array.from(grouped.entries()).map(([sagaSlug, data]) => ({ sagaSlug, ...data }));
+  return Array.from(grouped.entries()).map(([sagaSlug, data]) => ({
+    sagaSlug,
+    ...data,
+  }));
 }
 
 export async function getChapterBySlug(slug: string) {
-  const result = await db
+  const result = await getDb()
     .select({
       slug: chapters.slug,
       title: chapters.title,
@@ -41,23 +50,33 @@ export async function getChapterBySlug(slug: string) {
 }
 
 export async function getAllChapterSlugs() {
-  return db.select({ slug: chapters.slug }).from(chapters);
+  return getDb().select({ slug: chapters.slug }).from(chapters);
 }
 
-export async function getAdjacentChapters(sagaId: number, chapterNumber: number) {
-  const [prev] = await db
-    .select({ slug: chapters.slug, title: chapters.title })
+export async function getAdjacentChapters(
+  sagaId: number,
+  chapterNumber: number,
+) {
+  const ordered = await getDb()
+    .select({
+      slug: chapters.slug,
+      title: chapters.title,
+      sagaId: chapters.sagaId,
+      chapterNumber: chapters.chapterNumber,
+    })
     .from(chapters)
-    .where(and(eq(chapters.sagaId, sagaId), lt(chapters.chapterNumber, chapterNumber)))
-    .orderBy(desc(chapters.chapterNumber))
-    .limit(1);
-
-  const [next] = await db
-    .select({ slug: chapters.slug, title: chapters.title })
-    .from(chapters)
-    .where(and(eq(chapters.sagaId, sagaId), gt(chapters.chapterNumber, chapterNumber)))
-    .orderBy(asc(chapters.chapterNumber))
-    .limit(1);
-
-  return { prev: prev ?? null, next: next ?? null };
+    .innerJoin(sagas, eq(chapters.sagaId, sagas.id))
+    .orderBy(
+      asc(sagas.order),
+      asc(sagas.id),
+      asc(chapters.chapterNumber),
+      asc(chapters.id),
+    );
+  const index = ordered.findIndex(
+    (c) => c.sagaId === sagaId && c.chapterNumber === chapterNumber,
+  );
+  return {
+    prev: index > 0 ? ordered[index - 1] : null,
+    next: index >= 0 ? (ordered[index + 1] ?? null) : null,
+  };
 }

@@ -1,20 +1,17 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-
+"use client";
+import { useSyncExternalStore } from "react";
+import { readStored, parseProgress, subscribeReading } from "@/lib/reading";
 export function ReadingProgressBadge({ slug }: { slug: string }) {
-  const [progress, setProgress] = useState<number | null>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem(`zenith:progress:${slug}`);
-    if (saved) setProgress(Number(saved));
-  }, [slug]);
-
+  const raw = useSyncExternalStore(
+    subscribeReading,
+    () => readStored(`zenith:progress:${slug}`),
+    () => null,
+  );
+  const progress = parseProgress(raw);
   if (progress === null) return null;
-
-  if (progress >= 0.95) {
-    return <span className="text-xs text-primary">przeczytane</span>;
-  }
-
-  return <span className="text-xs text-muted-foreground">{Math.round(progress * 100)}%</span>;
+  return (
+    <span className="text-xs text-muted-foreground shrink-0">
+      {progress >= 0.95 ? "przeczytane" : `${Math.round(progress * 100)}%`}
+    </span>
+  );
 }

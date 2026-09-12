@@ -1,44 +1,17 @@
-import Link from 'next/link';
-import { getAllChaptersGroupedBySaga } from '@/lib/db/queries/chapters';
-import { ReadingProgressBadge } from '@/components/reader/reading-progress-badge';
-
-
+import type { Metadata } from "next";
+import { getAllChaptersGroupedBySaga } from "@/lib/db/queries/chapters";
+import { ChapterCatalog } from "@/components/reader/chapter-catalog";
+export const metadata: Metadata = { title: "Rozdziały" };
 export default async function ChaptersPage() {
-  const sagasWithChapters = await getAllChaptersGroupedBySaga();
-
+  const sagas = await getAllChaptersGroupedBySaga();
   return (
-    <div className="max-w-2xl mx-auto px-6 py-16">
-      <h1 className="text-3xl font-serif text-foreground mb-10">Rozdziały</h1>
-
-      {sagasWithChapters.length === 0 ? (
-        <p className="text-muted-foreground">Brak wgranych rozdziałów.</p>
-      ) : (
-        sagasWithChapters.map((saga) => (
-          <section key={saga.sagaSlug} className="mb-12">
-            <h2 className="text-sm uppercase tracking-widest text-muted-foreground mb-4">
-              {saga.title}
-            </h2>
-            <ol className="space-y-1">
-              {saga.chapters.map((chapter) => (
-                <li key={chapter.chapterSlug}>
-                  <Link
-                    href={`/chapters/${chapter.chapterSlug}`}
-                    className="flex items-baseline gap-4 py-3 border-b border-border/50 group"
-                  >
-                    <span className="text-sm text-muted-foreground tabular-nums">
-                      {String(chapter.chapterNumber).padStart(2, '0')}
-                    </span>
-                    <span className="text-foreground group-hover:text-primary transition-colors flex-1">
-                      {chapter.chapterTitle}
-                    </span>
-                    <ReadingProgressBadge slug={chapter.chapterSlug} />
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          </section>
-        ))
-      )}
+    <div className="max-w-3xl mx-auto px-6 py-16">
+      <p className="eyebrow">Biblioteka</p>
+      <h1 className="font-serif text-4xl mt-4">Rozdziały</h1>
+      <p className="mt-4 mb-10 text-muted-foreground">
+        Wybierz sagę, znajdź rozdział i wejdź w opowieść.
+      </p>
+      <ChapterCatalog sagas={sagas} />
     </div>
   );
 }

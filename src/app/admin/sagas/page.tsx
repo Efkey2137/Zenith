@@ -1,47 +1,47 @@
-'use client';
-
-import { useActionState } from 'react';
-import { createSagaAction } from '@/lib/actions/sagas';
-
-type FormState = { success: boolean; error: string | null; slug?: string };
-const initialState: FormState = { success: false, error: null };
-
-async function handleCreate(_prev: FormState, formData: FormData): Promise<FormState> {
-  const result = await createSagaAction(formData);
-  return result.success
-    ? { success: true, error: null, slug: result.slug }
-    : { success: false, error: result.error };
-}
-
-export default function AdminSagasPage() {
-  const [state, formAction, isPending] = useActionState(handleCreate, initialState);
-
+import Link from "next/link";
+import { asc } from "drizzle-orm";
+import { getDb } from "@/lib/db";
+import { sagas } from "@/lib/db/schema";
+import { requireAdmin } from "@/lib/auth";
+import { SagaForm } from "@/components/admin/saga-form";
+export default async function AdminSagas({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>;
+}) {
+  await requireAdmin();
+  const { edit } = await searchParams;
+  const all = await getDb()
+    .select()
+    .from(sagas)
+    .orderBy(asc(sagas.order), asc(sagas.id));
+  const saga = all.find((s) => s.id === Number(edit));
   return (
-    <div className="max-w-lg mx-auto py-16 px-4">
-      <h1 className="text-2xl font-semibold mb-6 text-foreground">Dodaj Sagę</h1>
-      <form action={formAction} className="space-y-4">
-        <div>
-          <label className="block text-sm text-muted-foreground mb-1">Tytuł</label>
-          <input name="title" required className="w-full bg-transparent border border-border rounded-md px-3 py-2 text-foreground" />
-        </div>
-        <div>
-          <label className="block text-sm text-muted-foreground mb-1">Slug (opcjonalnie)</label>
-          <input name="slug" placeholder="np. cykl-duszorzezcy" className="w-full bg-transparent border border-border rounded-md px-3 py-2 text-foreground" />
-        </div>
-        <div>
-          <label className="block text-sm text-muted-foreground mb-1">Kolejność (10, 20, 30...)</label>
-          <input name="order" type="number" required className="w-full bg-transparent border border-border rounded-md px-3 py-2 text-foreground" />
-        </div>
-        <div>
-          <label className="block text-sm text-muted-foreground mb-1">Opis / zarys fabuły</label>
-          <textarea name="description" rows={4} className="w-full bg-transparent border border-border rounded-md px-3 py-2 text-foreground" />
-        </div>
-        <button type="submit" disabled={isPending} className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md disabled:opacity-50">
-          {isPending ? 'Zapisywanie...' : 'Zapisz Sagę'}
-        </button>
-      </form>
-      {state.error && <p className="mt-4 text-red-500 text-sm">{state.error}</p>}
-      {state.success && <p className="mt-4 text-green-500 text-sm">Zapisano Sagę: {state.slug}</p>}
+    <div className="grid md:grid-cols-[220px_1fr] gap-10">
+      <aside>
+        <h2 className="eyebrow mb-5">Sagi</h2>
+        <Link href="/admin/sagas" className="secondary-button mb-5">
+          + Nowa saga
+        </Link>
+        <ul className="space-y-4 text-sm">
+          {all.map((s) => (
+            <li key={s.id}>
+              <Link href={`/admin/sagas?edit=${s.id}`}>
+                {s.title}
+                <span className="block mt-1 text-xs text-muted-foreground">
+                  {s.slug}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </aside>
+      <section className="max-w-xl">
+        <h1 className="font-serif text-3xl mb-8">
+          {saga ? "Edytuj sagę" : "Dodaj sagę"}
+        </h1>
+        <SagaForm key={saga?.id ?? "new"} saga={saga} />
+      </section>
     </div>
   );
 }

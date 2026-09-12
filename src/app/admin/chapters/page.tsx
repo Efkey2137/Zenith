@@ -1,52 +1,54 @@
-'use client';
-
-import { useActionState } from 'react';
-import { uploadChaptersAction } from '@/lib/actions/chapters';
-
-type ChapterUploadResult =
-  | { fileName: string; success: true; slug: string }
-  | { fileName: string; success: false; error: string };
-
-const initialState: ChapterUploadResult[] = [];
-
-async function handleUpload(_prev: ChapterUploadResult[], formData: FormData) {
-  return uploadChaptersAction(formData);
-}
-
-export default function AdminChaptersPage() {
-  const [results, formAction, isPending] = useActionState(handleUpload, initialState);
-
+import Link from "next/link";
+import { requireAdmin } from "@/lib/auth";
+import { getAllChaptersGroupedBySaga } from "@/lib/db/queries/chapters";
+import { ChapterUpload } from "@/components/admin/chapter-upload";
+export default async function AdminChapters() {
+  await requireAdmin();
+  const sagas = await getAllChaptersGroupedBySaga();
   return (
-    <div className="max-w-lg mx-auto py-16 px-4">
-      <h1 className="text-2xl font-semibold mb-6 text-foreground">Dodaj / zaktualizuj rozdziały</h1>
-      <form action={formAction} className="space-y-4">
-        <input
-          type="file"
-          name="files"
-          accept=".md,.txt"
-          multiple
-          required
-          className="block w-full text-sm text-muted-foreground"
-        />
-        <button
-          type="submit"
-          disabled={isPending}
-          className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md disabled:opacity-50"
-        >
-          {isPending ? 'Wgrywanie...' : 'Wgraj rozdziały'}
-        </button>
-      </form>
-
-      {results.length > 0 && (
-        <ul className="mt-6 space-y-1 text-sm">
-          {results.map((result, i) => (
-            <li key={i} className={result.success ? 'text-green-500' : 'text-red-500'}>
-              <span className="font-mono">{result.fileName}</span>:{' '}
-              {result.success ? `zapisano jako "${result.slug}"` : result.error}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="max-w-3xl mx-auto">
+      <p className="eyebrow">Biblioteka autora</p>
+      <h1 className="font-serif text-3xl mt-4 mb-8">
+        Dodaj lub zaktualizuj rozdziały
+      </h1>
+      <ChapterUpload />
+      <details className="border border-border p-5 my-8">
+        <summary className="text-sm">Jak przygotować plik rozdziału?</summary>
+        <p className="text-sm text-muted-foreground mt-4">
+          Najpierw dodaj sagę. Plik zaczyna się nagłówkiem YAML; po nim wpisz
+          treść w Markdown. Adres sagi znajdziesz w zakładce Sagi.
+        </p>
+        <pre className="text-xs mt-4 overflow-x-auto">
+          {
+            "---\ntitle: Tytuł rozdziału\nchapterNumber: 1\nsaga: adres-sagi\nslug: adres-rozdzialu\n---\n\nTreść rozdziału…"
+          }
+        </pre>
+        <p className="text-xs text-muted-foreground mt-4">
+          Przy aktualizacji zachowaj dotychczasowy adres rozdziału, aby zachować
+          linki i postęp czytelników.
+        </p>
+      </details>
+      <h2 className="font-serif text-2xl mb-6">Opublikowane rozdziały</h2>
+      {sagas.map((s) => (
+        <section key={s.sagaSlug} className="mb-8">
+          <h3 className="eyebrow mb-3">{s.title}</h3>
+          <ul>
+            {s.chapters.map((c) => (
+              <li
+                key={c.chapterSlug}
+                className="border-b border-border py-3 text-sm"
+              >
+                <Link href={`/chapters/${c.chapterSlug}`}>
+                  {c.chapterNumber}. {c.chapterTitle}
+                </Link>
+                <span className="block mt-1 text-xs text-muted-foreground break-all">
+                  Adres: {c.chapterSlug}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }

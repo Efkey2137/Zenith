@@ -1,6 +1,5 @@
-import matter from 'gray-matter';
-import slugify from 'slugify';
-
+import matter from "gray-matter";
+import { validSlug } from "../validation";
 interface ParsedChapter {
   slug: string;
   title: string;
@@ -8,21 +7,39 @@ interface ParsedChapter {
   sagaSlug: string;
   content: string;
 }
-
-export function parseChapterFile(rawFile: string, fallbackTitle: string): ParsedChapter {
-  const { data, content } = matter(rawFile);
-
-  const title: string = data.title ?? fallbackTitle;
+export function parseChapterFile(
+  rawFile: string,
+  fallbackTitle: string,
+): ParsedChapter {
+  const input = rawFile.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
+  // gray-matter also supports executable JavaScript frontmatter. Only plain YAML is accepted.
+  if (!/^---[ \t]*\n/.test(input))
+    throw new Error(
+      "Plik musi zaczynać się nagłówkiem YAML pomiędzy liniami --- .",
+    );
+  const { data, content } = matter(input);
+  const title = data.title ?? fallbackTitle;
+  if (typeof title !== "string" || !title.trim() || title.length > 200)
+    throw new Error("Tytuł musi być tekstem (do 200 znaków).");
+  if (
+    (typeof data.chapterNumber !== "number" &&
+      typeof data.chapterNumber !== "string") ||
+    String(data.chapterNumber).trim() === ""
+  )
+    throw new Error("Podaj numer rozdziału w polu chapterNumber.");
   const chapterNumber = Number(data.chapterNumber);
-  const sagaSlug: string = data.saga;
-  const slug: string = data.slug ?? slugify(title, { lower: true, strict: true });
-
-  if (!title || Number.isNaN(chapterNumber)) {
-    throw new Error('Plik musi zawierać frontmatter z polami "title" i "chapterNumber".');
-  }
-  if (!sagaSlug) {
-    throw new Error('Plik musi zawierać pole "saga" wskazujące slug istniejącej Sagi, np.:\nsaga: cykl-duszorzezcy');
-  }
-
-  return { slug, title, chapterNumber, sagaSlug, content: content.trim() };
+  if (!Number.isSafeInteger(chapterNumber) || chapterNumber < 0)
+    throw new Error("Numer rozdziału musi być nieujemną liczbą całkowitą.");
+  if (typeof data.saga !== "string" || !data.saga.trim())
+    throw new Error("Pole saga musi wskazywać adres istniejącej sagi.");
+  if (data.slug !== undefined && typeof data.slug !== "string")
+    throw new Error("Adres rozdziału musi być tekstem.");
+  if (!content.trim()) throw new Error("Rozdział nie może być pusty.");
+  return {
+    slug: validSlug(data.slug, title),
+    title: title.trim(),
+    chapterNumber,
+    sagaSlug: validSlug(data.saga),
+    content: content.trim(),
+  };
 }

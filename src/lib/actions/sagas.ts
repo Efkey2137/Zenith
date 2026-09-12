@@ -1,35 +1,53 @@
-'use server';
-
-import { db } from '@/lib/db';
-import { sagas } from '@/lib/db/schema';
-import { revalidatePath } from 'next/cache';
-import slugify from 'slugify';
-
-type SagaResult = { success: true; slug: string } | { success: false; error: string };
-
-export async function createSagaAction(formData: FormData): Promise<SagaResult> {
-  const title = formData.get('title') as string;
-  const orderRaw = formData.get('order') as string;
-  const description = (formData.get('description') as string) || null;
-  const slugRaw = ((formData.get('slug') as string) || '').trim();
-
-  if (!title || !orderRaw) {
-    return { success: false, error: 'Tytuł i kolejność są wymagane.' };
-  }
-
-  const order = Number(orderRaw);
-  if (Number.isNaN(order)) {
-    return { success: false, error: 'Kolejność musi być liczbą.' };
-  }
-
-  const slug = slugRaw || slugify(title, { lower: true, strict: true });
-
+"use server";
+import { getDb } from "@/lib/db";
+import { sagas } from "@/lib/db/schema";
+import { requireAdmin } from "@/lib/auth";
+import { textField, validSlug, ValidationError } from "@/lib/validation";
+import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
+type SagaResult =
+  { success: true; slug: string } | { success: false; error: string };
+export async function createSagaAction(
+  formData: FormData,
+): Promise<SagaResult> {
+  await requireAdmin();
   try {
-    await db.insert(sagas).values({ slug, title, order, description });
-  } catch {
-    return { success: false, error: `Nie udało się zapisać — slug "${slug}" może już istnieć.` };
+    const title = textField(formData, "title");
+    const orderRaw = textField(formData, "order");
+    const description = textField(formData, "description", 10000) || null;
+    if (!title || !orderRaw)
+      throw new ValidationError("Tytuł i kolejność są wymagane.");
+    const order = Number(orderRaw);
+    if (!Number.isSafeInteger(order) || order < 0)
+      throw new ValidationError(
+        "Kolejność musi być nieujemną liczbą całkowitą.",
+      );
+    const idRaw = textField(formData, "id");
+    const id = Number(idRaw);
+    if (idRaw && (!Number.isSafeInteger(id) || id <= 0))
+      throw new ValidationError("Nieprawidłowa saga.");
+    const existing = idRaw
+      ? (await getDb().select().from(sagas).where(eq(sagas.id, id)).limit(1))[0]
+      : null;
+    if (idRaw && !existing) throw new ValidationError("Saga już nie istnieje.");
+    const slug =
+      existing?.slug ?? validSlug(textField(formData, "slug"), title);
+    if (existing)
+      await getDb()
+        .update(sagas)
+        .set({ title, order, description })
+        .where(eq(sagas.id, existing.id));
+    else
+      await getDb().insert(sagas).values({ slug, title, order, description });
+    revalidatePath("/", "layout");
+    return { success: true, slug };
+  } catch (err) {
+    return {
+      success: false,
+      error:
+        err instanceof ValidationError
+          ? err.message
+          : "Nie udało się zapisać sagi. Sprawdź, czy adres jest wolny, i spróbuj ponownie.",
+    };
   }
-
-  revalidatePath('/chapters');
-  return { success: true, slug };
 }
