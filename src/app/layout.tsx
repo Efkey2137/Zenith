@@ -1,12 +1,16 @@
-import type { Metadata } from 'next';
-import './globals.css';
+import type { Metadata } from "next";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: 'Zenith',
-  description: 'Cyfrowe kompendium i czytnik powieści dark fantasy Zenith',
+  title: { default: "Zenith — powieść i jej świat", template: "%s · Zenith" },
+  description: "Cyfrowe kompendium i czytnik powieści dark fantasy Zenith",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="pl" className="dark">
       <body className="bg-background text-foreground antialiased">

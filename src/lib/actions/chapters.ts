@@ -1,81 +1,130 @@
-'use server';
-
-import { db } from '@/lib/db';
-import { chapters, sagas } from '@/lib/db/schema';
-import { parseChapterFile } from '@/lib/parsers/chapter-parser';
-import { revalidatePath } from 'next/cache';
-import { eq } from 'drizzle-orm';
-
+"use server";
+import { getDb } from "@/lib/db";
+import { chapters, sagas } from "@/lib/db/schema";
+import { parseChapterFile } from "@/lib/parsers/chapter-parser";
+import { requireAdmin } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
+import { and, eq, ne } from "drizzle-orm";
 type ChapterUploadResult =
   | { fileName: string; success: true; slug: string }
   | { fileName: string; success: false; error: string };
-
-export async function uploadChaptersAction(formData: FormData): Promise<ChapterUploadResult[]> {
-  const files = formData.getAll('files') as File[];
+export async function uploadChaptersAction(
+  formData: FormData,
+): Promise<ChapterUploadResult[]> {
+  await requireAdmin();
+  const files = formData
+    .getAll("files")
+    .filter((f): f is File => f instanceof File && f.size > 0);
+  if (!files.length)
+    return [
+      {
+        fileName: "Pliki",
+        success: false,
+        error: "Nie wybrano żadnych plików.",
+      },
+    ];
+  if (
+    files.length > 30 ||
+    files.reduce((sum, f) => sum + f.size, 0) > 3 * 1024 * 1024
+  )
+    return [
+      {
+        fileName: "Pliki",
+        success: false,
+        error: "Wybierz do 30 plików o łącznej wielkości do 3 MB.",
+      },
+    ];
   const results: ChapterUploadResult[] = [];
-
-  if (files.length === 0) {
-    return [{ fileName: '-', success: false, error: 'Nie wybrano żadnych plików.' }];
-  }
-
-  // Świadomie sekwencyjnie (await w pętli), nie Promise.all —
-  // lokalny sqld ma model jednego zapisu na raz, równoległe insercje
-  // tylko kolejkowałyby się i tak, a przy błędzie trudniej dociec, który plik zawinił.
   for (const file of files) {
-    if (!file || file.size === 0) continue;
-
-    if (!file.name.endsWith('.md') && !file.name.endsWith('.txt')) {
-      results.push({ fileName: file.name, success: false, error: 'Obsługiwane formaty: .md, .txt' });
-      continue;
-    }
-
-    const rawText = await file.text();
-    const fallbackTitle = file.name.replace(/\.(md|txt)$/, '');
-
-    let parsed;
-    try {
-      parsed = parseChapterFile(rawText, fallbackTitle);
-    } catch (err) {
-      results.push({ fileName: file.name, success: false, error: (err as Error).message });
-      continue;
-    }
-
-    const saga = await db.select().from(sagas).where(eq(sagas.slug, parsed.sagaSlug)).limit(1);
-    if (saga.length === 0) {
+    if (!/\.(md|txt)$/i.test(file.name)) {
       results.push({
         fileName: file.name,
         success: false,
-        error: `Saga o slugu "${parsed.sagaSlug}" nie istnieje.`,
+        error: "Obsługiwane formaty: .md, .txt",
       });
       continue;
     }
-
+    if (file.size > 512 * 1024) {
+      results.push({
+        fileName: file.name,
+        success: false,
+        error: "Pojedynczy rozdział może mieć maksymalnie 512 KB.",
+      });
+      continue;
+    }
+    let parsed;
     try {
-      await db
+      parsed = parseChapterFile(
+        await file.text(),
+        file.name.replace(/\.(md|txt)$/i, ""),
+      );
+    } catch (error) {
+      results.push({
+        fileName: file.name,
+        success: false,
+        error: error instanceof Error ? error.message : "Nieprawidłowy plik.",
+      });
+      continue;
+    }
+    try {
+      const [saga] = await getDb()
+        .select()
+        .from(sagas)
+        .where(eq(sagas.slug, parsed.sagaSlug))
+        .limit(1);
+      if (!saga) {
+        results.push({
+          fileName: file.name,
+          success: false,
+          error: `Saga „${parsed.sagaSlug}” nie istnieje. Najpierw dodaj ją w panelu Sag.`,
+        });
+        continue;
+      }
+      const [duplicate] = await getDb()
+        .select({ id: chapters.id })
+        .from(chapters)
+        .where(
+          and(
+            eq(chapters.sagaId, saga.id),
+            eq(chapters.chapterNumber, parsed.chapterNumber),
+            ne(chapters.slug, parsed.slug),
+          ),
+        )
+        .limit(1);
+      if (duplicate) {
+        results.push({
+          fileName: file.name,
+          success: false,
+          error:
+            "Ten numer rozdziału jest już zajęty w tej sadze. Użyj adresu istniejącego rozdziału, aby go zaktualizować.",
+        });
+        continue;
+      }
+      const values = {
+        title: parsed.title,
+        chapterNumber: parsed.chapterNumber,
+        sagaId: saga.id,
+        content: parsed.content,
+      };
+      await getDb()
         .insert(chapters)
-        .values({
-          slug: parsed.slug,
-          title: parsed.title,
-          chapterNumber: parsed.chapterNumber,
-          sagaId: saga[0].id,
-          content: parsed.content,
-        })
+        .values({ ...values, slug: parsed.slug })
         .onConflictDoUpdate({
           target: chapters.slug,
-          set: {
-            title: parsed.title,
-            chapterNumber: parsed.chapterNumber,
-            sagaId: saga[0].id,
-            content: parsed.content,
-            updatedAt: new Date().toISOString(),
-          },
+          set: { ...values, updatedAt: new Date().toISOString() },
         });
       results.push({ fileName: file.name, success: true, slug: parsed.slug });
-    } catch (err) {
-      results.push({ fileName: file.name, success: false, error: (err as Error).message });
+      revalidatePath(`/chapters/${parsed.slug}`);
+    } catch {
+      results.push({
+        fileName: file.name,
+        success: false,
+        error: "Nie udało się zapisać rozdziału. Spróbuj ponownie.",
+      });
     }
   }
-
-  revalidatePath('/chapters');
+  revalidatePath("/");
+  revalidatePath("/chapters");
+  revalidatePath("/admin/chapters");
   return results;
 }

@@ -129,3 +129,100 @@
     @apply font-sans;
   }
 }
+@layer base {
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+  button:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  summary {
+    outline-offset: 5px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--foreground);
+  }
+  select {
+    color-scheme: dark;
+  }
+  input,
+  textarea,
+  select {
+    min-width: 0;
+  }
+  ::selection {
+    background: #d4d4d4;
+    color: #171717;
+  }
+}
+@layer components {
+  .eyebrow {
+    @apply text-xs uppercase tracking-[0.2em] text-muted-foreground;
+  }
+  .primary-button {
+    @apply inline-flex min-h-11 items-center justify-center gap-3 rounded-sm bg-primary px-5 py-3 text-sm text-primary-foreground transition-colors hover:bg-primary/85 disabled:opacity-50;
+  }
+  .secondary-button {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-sm border border-border px-5 py-3 text-sm transition-colors hover:bg-muted disabled:opacity-50;
+  }
+  .icon-button {
+    @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-border hover:bg-muted disabled:opacity-40;
+  }
+  .field {
+    @apply w-full rounded-sm border border-border bg-background px-3 py-3 text-sm text-foreground;
+  }
+  .field-label {
+    @apply mb-2 block text-sm text-muted-foreground;
+  }
+  .empty-state {
+    @apply border border-dashed border-border py-12 px-6 text-center text-sm leading-relaxed text-muted-foreground;
+  }
+  .skip-link {
+    @apply absolute -top-20 left-4 z-50 bg-primary text-primary-foreground px-4 py-3 focus:top-2;
+  }
+}
+.reader-surface[data-theme="paper"] {
+  background: #eee7da;
+  color: #30291f;
+  --border: #30291f30;
+  --muted-foreground: #62584a;
+  --muted: #ded5c4;
+  --foreground: #30291f;
+}
+.reader-prose {
+  font-size: var(--reader-size, 19px);
+  line-height: var(--reader-leading, 1.9);
+  overflow-wrap: anywhere;
+}
+.reader-prose p {
+  line-height: inherit;
+}
+.reader-surface[data-theme="paper"] .prose {
+  --tw-prose-body: #30291f;
+  --tw-prose-headings: #201b15;
+  --tw-prose-bold: #201b15;
+  --tw-prose-links: #30291f;
+  --tw-prose-quotes: #62584a;
+  --tw-prose-bullets: #62584a;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

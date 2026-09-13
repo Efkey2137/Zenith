@@ -1,36 +1,27 @@
-import Link from 'next/link';
-
-const navItems = [
-  { href: '/characters', label: 'Postacie' },
-  { href: '/world', label: 'Świat' },
-  { href: '/chapters', label: 'Rozdziały' },
-  { href: '/power-system', label: 'System Mocy' },
-  { href: '/author', label: 'Autor' },
-];
-
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
+import Link from "next/link";
+import { SiteHeader } from "@/components/site/site-header";
+export const dynamic = "force-dynamic";
+export default function SiteLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <>
-      <header className="border-b border-border">
-        <nav className="max-w-5xl mx-auto flex items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-serif tracking-widest text-foreground">
-            ZENITH
+      <SiteHeader />
+      <main id="main" className="min-h-[70vh]">
+        {children}
+      </main>
+      <footer className="border-t border-border mt-12">
+        <div className="max-w-5xl mx-auto px-6 py-8 flex flex-wrap justify-between gap-4 text-xs text-muted-foreground">
+          <p className="tracking-widest">
+            ZENITH · Kroniki mrocznego słowiańskiego świata
+          </p>
+          <Link href="/admin" className="hover:text-foreground">
+            Panel autora
           </Link>
-          <ul className="flex gap-6 text-sm">
-            {navItems.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </header>
-      <main>{children}</main>
+        </div>
+      </footer>
     </>
   );
 }

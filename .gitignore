@@ -44,3 +44,4 @@ next-env.d.ts
 /data
 public/images
 public/uploads
+!.env.example
