@@ -5,6 +5,33 @@ import { parseChapterFile } from "@/lib/parsers/chapter-parser";
 import { requireAdmin } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { and, eq, ne } from "drizzle-orm";
+import { ensureChapterPublication } from "@/lib/db/chapter-publication";
+import {
+  saveChapterContent,
+  setChapterPublication,
+} from "@/lib/db/chapter-writes";
+
+export async function setChapterPublicationAction(formData: FormData) {
+  await requireAdmin();
+  const slug = formData.get("slug");
+  const published = formData.get("published");
+  if (
+    typeof slug !== "string" ||
+    !/^[a-z0-9-]{1,200}$/.test(slug) ||
+    (published !== "true" && published !== "false")
+  ) {
+    return { error: "Nieprawidłowe dane rozdziału." };
+  }
+  try {
+    if (!(await setChapterPublication(slug, published === "true")))
+      return { error: "Rozdział już nie istnieje. Odśwież listę." };
+  } catch {
+    return { error: "Nie udało się zmienić publikacji. Spróbuj ponownie." };
+  }
+  // Also refresh adjacent readers, home counts, catalogs and author previews.
+  revalidatePath("/", "layout");
+  return { error: "" };
+}
 type ChapterUploadResult =
   | { fileName: string; success: true; slug: string }
   | { fileName: string; success: false; error: string };
@@ -12,6 +39,7 @@ export async function uploadChaptersAction(
   formData: FormData,
 ): Promise<ChapterUploadResult[]> {
   await requireAdmin();
+  await ensureChapterPublication();
   const files = formData
     .getAll("files")
     .filter((f): f is File => f instanceof File && f.size > 0);
@@ -106,15 +134,10 @@ export async function uploadChaptersAction(
         sagaId: saga.id,
         content: parsed.content,
       };
-      await getDb()
-        .insert(chapters)
-        .values({ ...values, slug: parsed.slug })
-        .onConflictDoUpdate({
-          target: chapters.slug,
-          set: { ...values, updatedAt: new Date().toISOString() },
-        });
+      await saveChapterContent({ ...values, slug: parsed.slug });
       results.push({ fileName: file.name, success: true, slug: parsed.slug });
       revalidatePath(`/chapters/${parsed.slug}`);
+      revalidatePath(`/admin/chapters/${parsed.slug}`);
     } catch {
       results.push({
         fileName: file.name,

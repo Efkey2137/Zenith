@@ -10,6 +10,7 @@ Polskie kompendium powieści i czytnik w ciemnej, oszczędnej stylistyce. Next.j
 - Postacie: wyszukiwanie, frakcje, portrety i biografie w Markdown.
 - Edytowalne sekcje Świat, System Mocy i Autor. Aplikacja nie generuje treści książki.
 - Panel autora: logowanie, tworzenie i edycja postaci i sag, import/aktualizacja rozdziałów oraz edycja sekcji z podglądem.
+- Publikacja rozdziałów: nowe pliki są szkicami. Przy każdym rozdziale autor wybiera „Opublikuj” lub „Ukryj”; prywatny podgląd działa po zalogowaniu. Ukryte rozdziały nie trafiają do katalogu, strony głównej, publicznych adresów ani nawigacji czytnika.
 
 ## Uruchomienie lokalne
 
@@ -24,7 +25,7 @@ npm run db:init
 npm run dev
 ```
 
-Domyślny adres bazy w przykładzie tworzy lokalny plik SQLite. `db:init` tworzy wyłącznie brakujące tabele, nie usuwa i nie nadpisuje treści. Skrypt można uruchamiać ponownie. Nie dodaje przykładowych postaci ani rozdziałów.
+Domyślny adres bazy w przykładzie tworzy lokalny plik SQLite. `db:init` dodaje brakującą strukturę, nie usuwa i nie nadpisuje treści. Skrypt można uruchamiać ponownie. Nie dodaje przykładowych postaci ani rozdziałów.
 
 Jeśli lokalne ograniczenia systemu uniemożliwiają Turbopackowi tworzenie procesów lub portów, użyj `npm run dev -- --webpack` oraz `npm run build -- --webpack`.
 
@@ -39,6 +40,8 @@ Projekt jest połączony z repozytorium `Efkey2137/Zenith`. Gałęzie robocze s�
 5. Zweryfikuj podgląd przed scaleniem zmian do `main`. Podgląd podłączony do tej samej bazy ma dostęp do tych samych treści: testuj zapisy na osobnej bazie.
 
 Panel dostępny jest pod `/admin`. Publiczne strony nie wymagają konta. Każda operacja zapisu sprawdza sesję na serwerze. Nie umieszczaj hasła ani tokenów w kodzie, linkach ani opisie PR.
+
+Przy pierwszym odczycie rozdziałów aplikacja automatycznie dodaje kolumnę `published`, jeśli baza jej nie ma. Migracja w jednej transakcji zachowuje wszystkie dotychczasowe rozdziały jako publiczne. Nowe rozdziały są domyślnie szkicami; ponowne uruchomienie nie zmienia decyzji autora. Podgląd korzystający z bazy produkcyjnej wykonuje tę samą migrację, dlatego stare wdrożenie musi zostać zastąpione nową wersją przed ukrywaniem rozdziałów na tej bazie (stary kod nie obsługuje widoczności).
 
 ## Import rozdziałów
 
@@ -56,6 +59,8 @@ Treść w Markdown.
 ```
 
 Do 30 plików `.md` lub `.txt` jednocześnie, do 512 KB na plik i do 3 MB łącznie. Pole `slug` jest opcjonalne dla nowych rozdziałów. Przy aktualizacji zachowaj istniejący adres: ten sam adres nadpisuje tekst, tytuł i przypisanie do sagi. Tytuł może pochodzić z nazwy pliku. Numer jest nieujemną liczbą całkowitą; drugi adres z tym samym numerem w sadze zostanie odrzucony. Obsługiwany jest wyłącznie nagłówek YAML, także z BOM i końcami linii Windows.
+
+Wgranie nowego pliku nie publikuje go. Otwórz `/admin/chapters`, przejrzyj podgląd i wybierz „Opublikuj”. Przycisk „Ukryj” wycofuje rozdział z widoku czytelników bez usuwania treści; możesz go opublikować ponownie. Ponowne wgranie istniejącego pliku zachowuje jego status (publiczny albo szkic). Podgląd autora zapisuje postęp osobno od lektury czytelnika.
 
 ## Sprawdzenie
 

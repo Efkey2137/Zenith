@@ -21,6 +21,7 @@ export const chapters = sqliteTable("chapters", {
   title: text("title").notNull(),
   chapterNumber: integer("chapter_number").notNull(),
   content: text("content").notNull(),
+  published: integer("published", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(datetime('now'))`),
