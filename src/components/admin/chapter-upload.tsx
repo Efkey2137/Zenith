@@ -36,7 +36,8 @@ export function ChapterUpload() {
       </label>
       <p className="text-xs text-muted-foreground">
         Do 30 plików, łącznie do 3 MB. Ten sam adres rozdziału aktualizuje
-        istniejącą treść.
+        istniejącą treść. Nowe rozdziały zapisują się jako szkice. Aktualizacja
+        zachowuje dotychczasową widoczność.
       </p>
       <p role="status" className="text-sm text-red-300">
         {validation}
@@ -53,8 +54,8 @@ export function ChapterUpload() {
             >
               {r.fileName}:{" "}
               {r.success ? (
-                <Link href={`/chapters/${r.slug}`}>
-                  Zapisano. Otwórz rozdział →
+                <Link href={`/admin/chapters/${r.slug}`}>
+                  Zapisano. Otwórz podgląd autora →
                 </Link>
               ) : (
                 r.error

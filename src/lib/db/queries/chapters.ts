@@ -1,8 +1,20 @@
 import { getDb } from "@/lib/db";
 import { chapters, sagas } from "@/lib/db/schema";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
+import { ensureChapterPublication } from "@/lib/db/chapter-publication";
+import { requireAdmin } from "@/lib/auth";
 
 export async function getAllChaptersGroupedBySaga() {
+  return groupedChapters(true);
+}
+
+export async function getChaptersForAdmin() {
+  await requireAdmin();
+  return groupedChapters(false);
+}
+
+async function groupedChapters(publicOnly: boolean) {
+  await ensureChapterPublication();
   const rows = await getDb()
     .select({
       sagaTitle: sagas.title,
@@ -10,9 +22,11 @@ export async function getAllChaptersGroupedBySaga() {
       chapterSlug: chapters.slug,
       chapterTitle: chapters.title,
       chapterNumber: chapters.chapterNumber,
+      published: chapters.published,
     })
     .from(chapters)
     .innerJoin(sagas, eq(chapters.sagaId, sagas.id))
+    .where(publicOnly ? eq(chapters.published, true) : undefined)
     .orderBy(
       asc(sagas.order),
       asc(sagas.id),
@@ -33,6 +47,16 @@ export async function getAllChaptersGroupedBySaga() {
 }
 
 export async function getChapterBySlug(slug: string) {
+  return chapterBySlug(slug, true);
+}
+
+export async function getChapterForAdmin(slug: string) {
+  await requireAdmin();
+  return chapterBySlug(slug, false);
+}
+
+async function chapterBySlug(slug: string, publicOnly: boolean) {
+  await ensureChapterPublication();
   const result = await getDb()
     .select({
       slug: chapters.slug,
@@ -41,22 +65,33 @@ export async function getChapterBySlug(slug: string) {
       content: chapters.content,
       sagaId: chapters.sagaId,
       sagaTitle: sagas.title,
+      published: chapters.published,
     })
     .from(chapters)
     .innerJoin(sagas, eq(chapters.sagaId, sagas.id))
-    .where(eq(chapters.slug, slug))
+    .where(
+      and(
+        eq(chapters.slug, slug),
+        publicOnly ? eq(chapters.published, true) : undefined,
+      ),
+    )
     .limit(1);
   return result[0] ?? null;
 }
 
 export async function getAllChapterSlugs() {
-  return getDb().select({ slug: chapters.slug }).from(chapters);
+  await ensureChapterPublication();
+  return getDb()
+    .select({ slug: chapters.slug })
+    .from(chapters)
+    .where(eq(chapters.published, true));
 }
 
 export async function getAdjacentChapters(
   sagaId: number,
   chapterNumber: number,
 ) {
+  await ensureChapterPublication();
   const ordered = await getDb()
     .select({
       slug: chapters.slug,
@@ -66,6 +101,7 @@ export async function getAdjacentChapters(
     })
     .from(chapters)
     .innerJoin(sagas, eq(chapters.sagaId, sagas.id))
+    .where(eq(chapters.published, true))
     .orderBy(
       asc(sagas.order),
       asc(sagas.id),

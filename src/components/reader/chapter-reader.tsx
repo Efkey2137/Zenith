@@ -29,7 +29,11 @@ interface Chapter {
   content: string;
   sagaTitle: string;
 }
-const ChapterText = memo(function ChapterText({ content }: { content: string }) {
+const ChapterText = memo(function ChapterText({
+  content,
+}: {
+  content: string;
+}) {
   return <ReactMarkdown>{content}</ReactMarkdown>;
 });
 
@@ -37,10 +41,12 @@ export function ChapterReader({
   chapter,
   prevChapter,
   nextChapter,
+  preview = false,
 }: {
   chapter: Chapter;
   prevChapter: AdjacentChapter | null;
   nextChapter: AdjacentChapter | null;
+  preview?: boolean;
 }) {
   const [progress, setProgress] = useState(0);
   const [notice, setNotice] = useState("");
@@ -51,14 +57,15 @@ export function ChapterReader({
     () => readStored("zenith:reader-settings"),
     () => null,
   );
+  const storagePrefix = preview ? "zenith:author-preview" : "zenith";
   const bookmarkRaw = useSyncExternalStore(
     subscribeReading,
-    () => readStored(`zenith:bookmark:${chapter.slug}`),
+    () => readStored(`${storagePrefix}:bookmark:${chapter.slug}`),
     () => null,
   );
   const settings = parseSettings(settingsRaw);
   const bookmark = parseProgress(bookmarkRaw);
-  const storageKey = `zenith:progress:${chapter.slug}`;
+  const storageKey = `${storagePrefix}:progress:${chapter.slug}`;
   const minutes = Math.max(
     1,
     Math.ceil(chapter.content.trim().split(/\s+/).length / 220),
@@ -115,7 +122,7 @@ export function ChapterReader({
       setProgress(saved);
       scrollToRatio(saved);
       ready = true;
-      writeStored("zenith:last-chapter", chapter.slug);
+      if (!preview) writeStored("zenith:last-chapter", chapter.slug);
       window.addEventListener("scroll", handleScroll, { passive: true });
     });
     window.addEventListener("pagehide", save);
@@ -127,7 +134,7 @@ export function ChapterReader({
       window.removeEventListener("scroll", handleScroll);
       window.removeEventListener("pagehide", save);
     };
-  }, [chapter.slug, storageKey]);
+  }, [chapter.slug, storageKey, preview]);
   return (
     <div className="reader-surface" data-theme={settings.theme}>
       <div
@@ -147,10 +154,10 @@ export function ChapterReader({
         className={`${settings.wide ? "max-w-4xl" : "max-w-2xl"} mx-auto px-6 py-12 sm:py-16`}
       >
         <Link
-          href="/chapters"
+          href={preview ? "/admin/chapters" : "/chapters"}
           className="text-sm text-muted-foreground hover:text-foreground"
         >
-          ← Spis rozdziałów
+          {preview ? "← Rozdziały w panelu autora" : "← Spis rozdziałów"}
         </Link>
         <p className="mt-10 eyebrow">
           {chapter.sagaTitle} · Rozdział {chapter.chapterNumber}
@@ -230,7 +237,10 @@ export function ChapterReader({
           <button
             className="secondary-button fixed bottom-5 right-5 z-40 bg-background shadow-lg"
             onClick={() => {
-              writeStored(`zenith:bookmark:${chapter.slug}`, String(progress));
+              writeStored(
+                `${storagePrefix}:bookmark:${chapter.slug}`,
+                String(progress),
+              );
               setNotice("Zapisano zakładkę.");
             }}
           >
@@ -278,35 +288,37 @@ export function ChapterReader({
             Oznacz jako przeczytany
           </button>
         </div>
-        <nav
-          aria-label="Sąsiednie rozdziały"
-          className="mt-12 pt-8 border-t border-border grid sm:grid-cols-2 gap-6 text-sm"
-        >
-          {prevChapter ? (
-            <Link href={`/chapters/${prevChapter.slug}`}>
-              <span className="eyebrow block mb-2">Poprzedni rozdział</span>←{" "}
-              {prevChapter.title}
-            </Link>
-          ) : (
-            <span />
-          )}
-          {nextChapter ? (
-            <Link
-              href={`/chapters/${nextChapter.slug}`}
-              className="sm:text-right"
-            >
-              <span className="eyebrow block mb-2">Następny rozdział</span>
-              {nextChapter.title} →
-            </Link>
-          ) : (
-            <div className="sm:text-right">
-              <p className="text-muted-foreground mb-3">
-                Jesteś na końcu opublikowanej historii.
-              </p>
-              <Link href="/chapters">Wróć do spisu →</Link>
-            </div>
-          )}
-        </nav>
+        {!preview && (
+          <nav
+            aria-label="Sąsiednie rozdziały"
+            className="mt-12 pt-8 border-t border-border grid sm:grid-cols-2 gap-6 text-sm"
+          >
+            {prevChapter ? (
+              <Link href={`/chapters/${prevChapter.slug}`}>
+                <span className="eyebrow block mb-2">Poprzedni rozdział</span>←{" "}
+                {prevChapter.title}
+              </Link>
+            ) : (
+              <span />
+            )}
+            {nextChapter ? (
+              <Link
+                href={`/chapters/${nextChapter.slug}`}
+                className="sm:text-right"
+              >
+                <span className="eyebrow block mb-2">Następny rozdział</span>
+                {nextChapter.title} →
+              </Link>
+            ) : (
+              <div className="sm:text-right">
+                <p className="text-muted-foreground mb-3">
+                  Jesteś na końcu opublikowanej historii.
+                </p>
+                <Link href="/chapters">Wróć do spisu →</Link>
+              </div>
+            )}
+          </nav>
+        )}
       </article>
     </div>
   );
