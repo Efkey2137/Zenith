@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Zenith",
+    "slug": "zenith-reader",
+    "version": "0.1.0",
+    "scheme": "zenith",
+    "orientation": "default",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0a0a0a",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.efkey.zenith"
+    },
+    "android": {
+      "package": "com.efkey.zenith"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "icon": "./assets/zenith-icon.png"
+  }
+}

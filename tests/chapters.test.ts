@@ -18,6 +18,9 @@ import {
   getChapterBySlug,
 } from "../src/lib/db/queries/chapters";
 import { sql } from "drizzle-orm";
+import { GET as chapterResponse } from "../src/app/api/mobile/v1/chapters/[slug]/route";
+import { GET as catalogResponse } from "../src/app/api/mobile/v1/catalog/route";
+import { GET as characterResponse } from "../src/app/api/mobile/v1/characters/[slug]/route";
 // Private databases only: no .env.local or production credentials are loaded.
 // libSQL opens a new connection after an interactive transaction, so migration
 // tests use a disposable file rather than a connection-local :memory: database.
@@ -160,4 +163,49 @@ test("a failed migration rolls back both the column and publication changes", as
   } finally {
     client.close();
   }
+});
+
+test("mobile API exposes only published chapters, even when a draft slug is known", async () => {
+  const db = getDb();
+  await db.run(
+    sql`CREATE TABLE characters (id INTEGER PRIMARY KEY, slug TEXT, name TEXT, fraction TEXT, image_url TEXT, bio TEXT, created_at TEXT, updated_at TEXT)`,
+  );
+  await db.run(
+    sql`INSERT INTO characters (slug,name,bio) VALUES ('hero','Hero','Public biography')`,
+  );
+  const privateResponse = await chapterResponse(
+    new Request("https://zenith.test/api/mobile/v1/chapters/b?published=true"),
+    { params: Promise.resolve({ slug: "b" }) },
+  );
+  assert.equal(privateResponse.status, 404);
+  assert.equal((await privateResponse.text()).includes("Secret B text"), false);
+  const publicResponse = await chapterResponse(
+    new Request("https://zenith.test/api/mobile/v1/chapters/a"),
+    { params: Promise.resolve({ slug: "a" }) },
+  );
+  const chapter = await publicResponse.json();
+  assert.equal(chapter.content, "A text");
+  assert.equal(chapter.next.slug, "c");
+  assert.equal(chapter.previous, null);
+  assert.equal(publicResponse.headers.get("Cache-Control"), "no-store");
+  assert.equal(Object.hasOwn(chapter, "published"), false);
+  const catalog = await (await catalogResponse()).json();
+  assert.deepEqual(
+    catalog.sagas.flatMap((s: { chapters: { slug: string }[] }) =>
+      s.chapters.map((c) => c.slug),
+    ),
+    ["a", "c", "draft"],
+  );
+  assert.equal(JSON.stringify(catalog).includes("Secret B text"), false);
+  assert.equal(
+    JSON.stringify(catalog.characters).includes("Public biography"),
+    false,
+  );
+  const hero = await (
+    await characterResponse(new Request("https://zenith.test"), {
+      params: Promise.resolve({ slug: "hero" }),
+    })
+  ).json();
+  assert.equal(hero.bio, "Public biography");
+  assert.equal(Object.hasOwn(hero, "id"), false);
 });
