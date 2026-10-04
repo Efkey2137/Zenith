@@ -42,3 +42,5 @@ Nie kopiujemy czterech mobilnych zakładek do szerokiej przeglądarki ani nie za
 | Ustawienia i zakładki nad treścią    | Pasek czytnika i natywny dialog z obsługą Escape i powrotem fokusu | Więcej miejsca na tekst i przewidywalne sterowanie |
 
 Po sprawdzeniu podglądu poprawiono kontrast prozy, odstęp wyszukiwarki od filtrów oraz pełną szerokość mobilnego panelu. Sprawdzono układ 390 × 844 i 1440 × 960, wyszukiwanie bez polskich znaków, wybór sagi ze strony głównej, postęp po zmianie typografii, powrót do zakładki i ponowne otwarcie rozdziału. Dane do podglądu są oddzielną lokalną kopią wyłącznie publicznej biblioteki.
+
+Podgląd Vercel po kompilacji Turbopack wczytał poprzedni arkusz CSS mimo nowych komponentów. Domyślne zadanie produkcyjne ustawiono na `next build --webpack`, ten sam tryb, w którym sprawdzono lokalny wygląd i kompilację.
