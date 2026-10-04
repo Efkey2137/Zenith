@@ -2,11 +2,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Chapter, Character, Catalog } from "./models";
 import { isCatalog } from "./models";
 
-export const SITE_URL = (
+export const SITE_URL = "https://zenith-orpin-six.vercel.app";
+const API_ORIGIN = (
   process.env.EXPO_PUBLIC_ZENITH_URL ??
   "https://zenith-git-codex-ios-test-app-efkeys-projects.vercel.app"
 ).replace(/\/$/, "");
-const API_URL = `${SITE_URL}/api/mobile/v1`;
+const API_URL = `${API_ORIGIN}/api/mobile/v1`;
 const cacheKey = (path: string) => `zenith:v1:${API_URL}:${path}`;
 export class ApiError extends Error {
   constructor(

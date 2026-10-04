@@ -125,7 +125,7 @@ export default function Chapters() {
                 accessibilityLiveRegion="polite"
                 style={{ color: colors.muted, fontSize: 12 }}
               >
-                {rows.length} rozdziałów
+                Rozdziały: {rows.length}
               </Text>
             </View>
           }
