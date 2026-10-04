@@ -17,25 +17,36 @@ export default async function AdminLayout({
       <header className="border-b border-border">
         <nav
           aria-label="Panel autora"
-          className="max-w-5xl mx-auto px-6 py-5 flex flex-wrap items-center gap-5 text-sm"
+          className="site-shell py-4 flex flex-wrap items-center gap-5 text-sm"
         >
-          <Link href="/" className="mr-auto font-serif tracking-widest">
-            ZENITH
+          <Link
+            href="/"
+            className="mr-auto flex min-h-11 items-center font-serif text-[28px] tracking-tight"
+          >
+            Zenith
           </Link>
           {authenticated && (
             <>
-              <Link href="/admin/chapters">Rozdziały</Link>
-              <Link href="/admin/characters">Postacie</Link>
-              <Link href="/admin/sagas">Sagi</Link>
-              <Link href="/admin/pages">Sekcje strony</Link>
+              <Link className="nav-link" href="/admin/chapters">
+                Rozdziały
+              </Link>
+              <Link className="nav-link" href="/admin/characters">
+                Postacie
+              </Link>
+              <Link className="nav-link" href="/admin/sagas">
+                Sagi
+              </Link>
+              <Link className="nav-link" href="/admin/pages">
+                Sekcje strony
+              </Link>
               <form action={logoutAction}>
-                <button className="text-muted-foreground">Wyloguj</button>
+                <button className="secondary-button">Wyloguj</button>
               </form>
             </>
           )}
         </nav>
       </header>
-      <main className="max-w-5xl mx-auto px-6 py-12">{children}</main>
+      <main className="page-shell">{children}</main>
     </>
   );
 }

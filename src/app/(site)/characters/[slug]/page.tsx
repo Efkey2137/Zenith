@@ -15,21 +15,18 @@ export default async function CharacterPage({
   if (!character) notFound();
 
   return (
-    <article className="max-w-4xl mx-auto px-6 py-20">
-      <Link
-        href="/characters"
-        className="inline-block text-sm text-muted-foreground mb-8"
-      >
+    <article className="page-shell max-w-5xl">
+      <Link href="/characters" className="back-link mb-8">
         ← Wszystkie postacie
       </Link>
       <div className="grid md:grid-cols-[280px_1fr] gap-10">
-        <div className="relative aspect-3/4 rounded-md overflow-hidden bg-zinc-900 border border-border">
+        <div className="portrait mx-auto w-full max-w-[320px] aspect-3/4">
           {character.imageUrl ? (
             <Image
               src={character.imageUrl}
               alt={character.name}
               fill
-              sizes="280px"
+              sizes="(max-width:768px) 320px, 280px"
               className="object-cover"
             />
           ) : (
@@ -40,15 +37,11 @@ export default async function CharacterPage({
         </div>
 
         <div>
-          <h1 className="text-4xl font-serif text-foreground">
-            {character.name}
-          </h1>
+          <h1 className="page-heading">{character.name}</h1>
           {character.fraction && (
-            <p className="mt-2 text-sm text-muted-foreground uppercase tracking-widest">
-              {character.fraction}
-            </p>
+            <p className="mt-3 text-sm text-brass">{character.fraction}</p>
           )}
-          <div className="mt-8 prose prose-invert prose-zinc max-w-none prose-p:leading-relaxed">
+          <div className="mt-8 prose zenith-prose max-w-none">
             <ReactMarkdown>{character.bio}</ReactMarkdown>
           </div>
         </div>

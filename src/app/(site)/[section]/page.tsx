@@ -25,14 +25,14 @@ export default async function ContentPage({
   const definition = pageDefinitions[section];
   const page = await getPage(section);
   return (
-    <article className="max-w-3xl mx-auto px-6 py-16">
+    <article className="page-shell max-w-3xl">
       <p className="eyebrow">{definition.eyebrow}</p>
-      <h1 className="font-serif text-4xl mt-4">{definition.title}</h1>
+      <h1 className="page-heading mt-3">{definition.title}</h1>
       <p className="text-muted-foreground mt-4 mb-10 leading-relaxed">
         {definition.description}
       </p>
       {page?.content ? (
-        <div className="prose prose-invert prose-zinc prose-headings:font-serif max-w-none break-words">
+        <div className="prose zenith-prose prose-headings:font-serif max-w-none break-words">
           <ReactMarkdown>{page.content}</ReactMarkdown>
         </div>
       ) : (

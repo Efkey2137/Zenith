@@ -1,4 +1,5 @@
 "use client";
+import { Check } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { readStored, parseProgress, subscribeReading } from "@/lib/reading";
 export function ReadingProgressBadge({ slug }: { slug: string }) {
@@ -10,8 +11,15 @@ export function ReadingProgressBadge({ slug }: { slug: string }) {
   const progress = parseProgress(raw);
   if (progress === null) return null;
   return (
-    <span className="text-xs text-muted-foreground shrink-0">
-      {progress >= 0.95 ? "przeczytane" : `${Math.round(progress * 100)}%`}
+    <span className="reading-badge">
+      {progress >= 0.95 ? (
+        <>
+          <Check size={12} aria-hidden="true" />
+          <span>przeczytane</span>
+        </>
+      ) : (
+        `${Math.round(progress * 100)}%`
+      )}
     </span>
   );
 }

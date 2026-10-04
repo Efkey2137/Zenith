@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { ChevronRight, Search } from "lucide-react";
 import { normalizeSearch } from "@/lib/validation";
+import { FilterPills } from "@/components/site/filter-pills";
 import { ReadingProgressBadge } from "./reading-progress-badge";
 import { ContinueReading } from "./continue-reading";
 interface Saga {
@@ -13,9 +15,17 @@ interface Saga {
     chapterNumber: number;
   }[];
 }
-export function ChapterCatalog({ sagas }: { sagas: Saga[] }) {
+export function ChapterCatalog({
+  sagas,
+  initialSaga = "",
+}: {
+  sagas: Saga[];
+  initialSaga?: string;
+}) {
   const [query, setQuery] = useState("");
-  const [sagaSlug, setSagaSlug] = useState("");
+  const [sagaSlug, setSagaSlug] = useState(
+    sagas.some((s) => s.sagaSlug === initialSaga) ? initialSaga : "",
+  );
   const all = sagas.flatMap((s) => s.chapters);
   const filtered = sagas
     .filter((s) => !sagaSlug || s.sagaSlug === sagaSlug)
@@ -37,54 +47,56 @@ export function ChapterCatalog({ sagas }: { sagas: Saga[] }) {
         }))}
       />
       {all.length > 0 && (
-        <div className="grid sm:grid-cols-[1fr_200px] gap-3 mb-7">
-          <label>
-            <span className="field-label">Szukaj rozdziału</span>
-            <input
-              type="search"
-              className="field"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Tytuł lub numer…"
-            />
+        <div className="mb-6 space-y-4">
+          <label className="block">
+            <span className="sr-only">Szukaj rozdziału</span>
+            <span className="search-field">
+              <Search size={19} aria-hidden="true" />
+              <input
+                type="search"
+                className="field"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Szukaj tytułu lub numeru rozdziału…"
+              />
+            </span>
           </label>
-          <label>
-            <span className="field-label">Saga</span>
-            <select
-              className="field"
-              value={sagaSlug}
-              onChange={(e) => setSagaSlug(e.target.value)}
-            >
-              <option value="">Wszystkie sagi</option>
-              {sagas.map((s) => (
-                <option key={s.sagaSlug} value={s.sagaSlug}>
-                  {s.title}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FilterPills
+            label="Saga"
+            value={sagaSlug}
+            onChange={setSagaSlug}
+            options={[
+              { value: "", label: "Wszystkie sagi" },
+              ...sagas.map((s) => ({ value: s.sagaSlug, label: s.title })),
+            ]}
+          />
         </div>
       )}
-      <p role="status" className="text-xs text-muted-foreground mb-8">
+      <p role="status" className="mb-8 text-sm text-muted-foreground">
         {filtered.reduce((n, s) => n + s.chapters.length, 0)} z {all.length}{" "}
         rozdziałów
       </p>
       {filtered.length ? (
         filtered.map((s) => (
-          <section key={s.sagaSlug} className="mb-12">
-            <h2 className="eyebrow mb-4">{s.title}</h2>
-            <ol>
+          <section key={s.sagaSlug} className="mb-10">
+            <h2 className="mb-4 font-serif text-2xl">{s.title}</h2>
+            <ol className="divide-y divide-border border-y border-border">
               {s.chapters.map((c) => (
                 <li key={c.chapterSlug}>
                   <Link
                     href={`/chapters/${c.chapterSlug}`}
-                    className="flex items-baseline gap-4 py-4 border-b border-border/60 hover:bg-muted/20 transition-colors"
+                    className="catalog-row my-1"
                   >
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {String(c.chapterNumber).padStart(2, "0")}
+                    <span className="chapter-number">{c.chapterNumber}</span>
+                    <span className="min-w-0 flex-1 font-serif text-lg leading-snug">
+                      {c.chapterTitle}
                     </span>
-                    <span className="flex-1 min-w-0">{c.chapterTitle}</span>
                     <ReadingProgressBadge slug={c.chapterSlug} />
+                    <ChevronRight
+                      size={17}
+                      className="shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
                   </Link>
                 </li>
               ))}
