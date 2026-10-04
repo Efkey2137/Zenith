@@ -2,16 +2,28 @@ import type { Metadata } from "next";
 import { getAllChaptersGroupedBySaga } from "@/lib/db/queries/chapters";
 import { ChapterCatalog } from "@/components/reader/chapter-catalog";
 export const metadata: Metadata = { title: "Rozdziały" };
-export default async function ChaptersPage() {
-  const sagas = await getAllChaptersGroupedBySaga();
+export default async function ChaptersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saga?: string | string[] }>;
+}) {
+  const [sagas, params] = await Promise.all([
+    getAllChaptersGroupedBySaga(),
+    searchParams,
+  ]);
+  const initialSaga = typeof params.saga === "string" ? params.saga : "";
   return (
-    <div className="max-w-3xl mx-auto px-6 py-16">
-      <p className="eyebrow">Biblioteka</p>
-      <h1 className="font-serif text-4xl mt-4">Rozdziały</h1>
-      <p className="mt-4 mb-10 text-muted-foreground">
+    <div className="page-shell max-w-3xl">
+      <p className="eyebrow mb-3">Biblioteka</p>
+      <h1 className="page-heading">Rozdziały</h1>
+      <p className="mb-9 mt-4 leading-relaxed text-muted-foreground">
         Wybierz sagę, znajdź rozdział i wejdź w opowieść.
       </p>
-      <ChapterCatalog sagas={sagas} />
+      <ChapterCatalog
+        key={initialSaga}
+        sagas={sagas}
+        initialSaga={initialSaga}
+      />
     </div>
   );
 }

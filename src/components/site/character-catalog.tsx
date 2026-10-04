@@ -2,7 +2,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { Search } from "lucide-react";
 import { normalizeSearch } from "@/lib/validation";
+import { FilterPills } from "./filter-pills";
 interface Character {
   slug: string;
   name: string;
@@ -20,62 +22,67 @@ export function CharacterCatalog({ characters }: { characters: Character[] }) {
   const filtered = characters.filter(
     (c) =>
       (!faction || c.fraction === faction) &&
-      normalizeSearch(c.name).includes(normalizeSearch(query)),
+      normalizeSearch(`${c.name} ${c.fraction ?? ""}`).includes(
+        normalizeSearch(query),
+      ),
   );
   return (
     <>
       {characters.length > 0 && (
-        <div className="grid sm:grid-cols-2 gap-3 mb-8">
-          <label>
-            <span className="field-label">Szukaj postaci</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="field"
-              placeholder="Imię lub przydomek…"
-            />
+        <div className="mb-6 space-y-4">
+          <label className="block">
+            <span className="sr-only">Szukaj postaci</span>
+            <span className="search-field">
+              <Search size={19} aria-hidden="true" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="field"
+                placeholder="Szukaj imienia lub przydomka…"
+              />
+            </span>
           </label>
-          <label>
-            <span className="field-label">Frakcja</span>
-            <select
-              className="field"
-              value={faction}
-              onChange={(e) => setFaction(e.target.value)}
-            >
-              <option value="">Wszystkie frakcje</option>
-              {factions.map((f) => (
-                <option key={f}>{f}</option>
-              ))}
-            </select>
-          </label>
+          <FilterPills
+            label="Frakcja"
+            value={faction}
+            onChange={setFaction}
+            options={[
+              { value: "", label: "Wszystkie frakcje" },
+              ...factions.map((f) => ({ value: f, label: f })),
+            ]}
+          />
         </div>
       )}
-      <p role="status" className="text-xs text-muted-foreground mb-6">
+      <p role="status" className="mb-7 text-sm text-muted-foreground">
         {filtered.length} z {characters.length} postaci
       </p>
       {filtered.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-4 sm:gap-x-7">
           {filtered.map((c) => (
-            <Link key={c.slug} href={`/characters/${c.slug}`} className="group">
-              <div className="relative aspect-3/4 rounded-sm overflow-hidden bg-zinc-900 border border-border group-hover:border-primary transition-colors">
+            <Link
+              key={c.slug}
+              href={`/characters/${c.slug}`}
+              className="group rounded-2xl"
+            >
+              <div className="portrait aspect-3/4">
                 {c.imageUrl ? (
                   <Image
                     src={c.imageUrl}
                     alt={c.name}
                     fill
-                    sizes="(max-width:640px) 45vw, (max-width:768px) 30vw, 210px"
-                    className="object-cover grayscale-40 group-hover:grayscale-0 transition-all"
+                    sizes="(max-width:640px) 45vw, (max-width:1024px) 30vw, 255px"
+                    className="object-cover"
                   />
                 ) : (
-                  <div className="h-full flex items-center justify-center text-5xl text-muted-foreground font-serif">
+                  <div className="flex h-full items-center justify-center font-serif text-5xl text-muted-foreground">
                     {c.name.charAt(0)}
                   </div>
                 )}
               </div>
-              <h2 className="mt-3 font-serif text-lg">{c.name}</h2>
+              <h2 className="mt-3 font-serif text-xl">{c.name}</h2>
               {c.fraction && (
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                   {c.fraction}
                 </p>
               )}

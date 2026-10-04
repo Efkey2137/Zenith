@@ -4,10 +4,10 @@ export const metadata = { title: "Postacie" };
 export default async function CharactersPage() {
   const characters = await getAllCharacters();
   return (
-    <div className="max-w-5xl mx-auto px-6 py-16">
+    <div className="page-shell">
       <p className="eyebrow">Bohaterowie opowieści</p>
-      <h1 className="text-4xl font-serif mt-4">Postacie</h1>
-      <p className="text-muted-foreground mt-4 mb-10">
+      <h1 className="page-heading mt-3">Postacie</h1>
+      <p className="text-muted-foreground leading-relaxed mt-4 mb-9">
         Poznaj bohaterów Zenith. Ich biografie mogą zdradzać wydarzenia z
         powieści.
       </p>

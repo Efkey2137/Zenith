@@ -1,61 +1,94 @@
 import Link from "next/link";
-import { ArrowRight, BookOpen, Users, Compass, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronRight,
+  Users,
+  Compass,
+  Sparkles,
+} from "lucide-react";
 import { getAllChaptersGroupedBySaga } from "@/lib/db/queries/chapters";
 import { ContinueReading } from "@/components/reader/continue-reading";
+import { BranchMark } from "@/components/site/book-mark";
 export default async function HomePage() {
   const sagas = await getAllChaptersGroupedBySaga();
-  const chapters = sagas.flatMap((s) => s.chapters);
-  const first = chapters[0];
+  const chapters = sagas.flatMap((s) =>
+    s.chapters.map((c) => ({
+      slug: c.chapterSlug,
+      title: c.chapterTitle,
+      number: c.chapterNumber,
+      sagaTitle: s.title,
+    })),
+  );
   return (
-    <div className="max-w-5xl mx-auto px-6">
-      <section className="py-20 sm:py-28 max-w-3xl">
-        <p className="eyebrow mb-8">Powieść i jej świat</p>
-        <h1 className="font-serif text-6xl sm:text-8xl tracking-[0.12em]">
-          ZENITH
-        </h1>
-        <p className="mt-7 text-xl sm:text-2xl text-muted-foreground font-serif leading-relaxed max-w-xl">
-          Kroniki mrocznego
-          <br className="hidden sm:block" /> słowiańskiego świata.
-        </p>
-        <div className="flex flex-wrap gap-3 mt-10">
-          <Link
-            href={first ? `/chapters/${first.chapterSlug}` : "/chapters"}
-            className="primary-button"
-          >
-            <BookOpen size={16} />
-            {first ? "Zacznij czytać" : "Przejdź do rozdziałów"}
-            <ArrowRight size={16} />
-          </Link>
-          <Link href="/world" className="secondary-button">
-            Odkryj świat
-          </Link>
+    <div className="site-shell">
+      <section className="grid items-center gap-10 py-12 sm:py-18 lg:grid-cols-[1fr_440px] lg:gap-16 lg:py-22">
+        <div>
+          <div className="flex items-center gap-5 sm:gap-7">
+            <h1 className="font-serif text-7xl leading-none tracking-[-0.05em] sm:text-8xl">
+              Zenith
+            </h1>
+            <BranchMark className="shrink-0 text-brass" />
+          </div>
+          <p className="mt-6 max-w-md font-serif text-2xl leading-relaxed text-muted-foreground sm:text-[28px]">
+            Kroniki mrocznego
+            <br />
+            słowiańskiego świata.
+          </p>
+          <p className="mt-5 text-sm text-muted-foreground">
+            {chapters.length} rozdziałów · {sagas.length} sagi
+            <br className="sm:hidden" />
+            <span className="hidden sm:inline"> · </span>Czytaj we własnym
+            tempie.
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground mt-6">
-          Rozdziały: {chapters.length} · Sagi: {sagas.length} · Czytaj we
-          własnym tempie
-        </p>
+        <ContinueReading chapters={chapters} featured />
       </section>
-      <ContinueReading
-        chapters={chapters.map((c) => ({
-          slug: c.chapterSlug,
-          title: c.chapterTitle,
-        }))}
-      />
-      <section aria-labelledby="explore" className="pb-12">
-        <div className="flex items-center gap-5 mb-7">
-          <h2 id="explore" className="eyebrow">
-            Poznaj Zenith
+      <section aria-labelledby="library" className="pb-10 sm:pb-14">
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 id="library" className="font-serif text-2xl sm:text-3xl">
+            Twoja biblioteka
           </h2>
-          <span className="h-px bg-border flex-1" />
+          <Link href="/chapters" className="back-link">
+            Cały spis <ArrowRight size={16} aria-hidden="true" />
+          </Link>
         </div>
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="divide-y divide-border border-y border-border">
+          {sagas.map((s) => (
+            <Link
+              key={s.sagaSlug}
+              href={`/chapters?saga=${encodeURIComponent(s.sagaSlug)}`}
+              className="catalog-row my-1 gap-5 sm:px-4"
+            >
+              <span
+                className="h-10 w-1 shrink-0 rounded-full bg-brass/70"
+                aria-hidden="true"
+              />
+              <div className="min-w-0 flex-1">
+                <h3 className="font-serif text-xl sm:text-2xl">{s.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Rozdziały: {s.chapters.length}
+                </p>
+              </div>
+              <ChevronRight
+                size={20}
+                className="shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+            </Link>
+          ))}
+          {!sagas.length && (
+            <p className="py-8 text-muted-foreground">
+              Sagi pojawią się tutaj po publikacji przez autora.
+            </p>
+          )}
+        </div>
+      </section>
+      <section aria-labelledby="explore" className="pb-12 sm:pb-16">
+        <h2 id="explore" className="font-serif text-2xl sm:text-3xl">
+          Poza rozdziałami
+        </h2>
+        <div className="mt-3 grid gap-x-8 sm:grid-cols-3">
           {[
-            {
-              href: "/chapters",
-              title: "Rozdziały",
-              text: "Kolejne sagi, jeden spis. Wróć do swojej lektury.",
-              icon: BookOpen,
-            },
             {
               href: "/characters",
               title: "Postacie",
@@ -75,26 +108,16 @@ export default async function HomePage() {
               icon: Sparkles,
             },
           ].map(({ href, title, text, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="group border border-border p-6 sm:p-8 hover:bg-muted/30 transition-colors"
-            >
-              <Icon
-                size={20}
-                strokeWidth={1.2}
-                className="text-muted-foreground mb-6"
-              />
-              <h3 className="font-serif text-2xl flex items-center justify-between">
-                {title}
-                <ArrowRight
-                  size={17}
-                  className="text-muted-foreground group-hover:translate-x-1 transition-transform"
-                />
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed mt-3">
-                {text}
-              </p>
+            <Link key={href} href={href} className="explore-link">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-card text-primary">
+                <Icon size={21} strokeWidth={1.5} aria-hidden="true" />
+              </span>
+              <div>
+                <h3 className="font-serif text-xl">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {text}
+                </p>
+              </div>
             </Link>
           ))}
         </div>

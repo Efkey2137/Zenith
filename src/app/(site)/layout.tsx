@@ -12,12 +12,15 @@ export default function SiteLayout({
       <main id="main" className="min-h-[70vh]">
         {children}
       </main>
-      <footer className="border-t border-border mt-12">
-        <div className="max-w-5xl mx-auto px-6 py-8 flex flex-wrap justify-between gap-4 text-xs text-muted-foreground">
-          <p className="tracking-widest">
-            ZENITH · Kroniki mrocznego słowiańskiego świata
-          </p>
-          <Link href="/admin" className="hover:text-foreground">
+      <footer className="border-t border-border">
+        <div className="site-shell flex flex-wrap items-center justify-between gap-4 py-7 text-sm text-muted-foreground">
+          <div>
+            <p className="font-serif text-xl text-foreground">Zenith</p>
+            <p className="mt-1 text-xs leading-relaxed">
+              Kroniki mrocznego słowiańskiego świata
+            </p>
+          </div>
+          <Link href="/admin" className="back-link">
             Panel autora
           </Link>
         </div>
