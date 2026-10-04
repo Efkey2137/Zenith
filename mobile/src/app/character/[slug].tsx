@@ -38,7 +38,7 @@ function LoadCharacter({ slug }: { slug: string }) {
     };
   }, [slug, attempt]);
   return (
-    <Screen>
+    <Screen withHeader>
       {character ? (
         <ScrollView contentContainerStyle={ui.content}>
           <Stack.Screen options={{ title: character.name }} />
@@ -51,6 +51,7 @@ function LoadCharacter({ slug }: { slug: string }) {
                 width: "100%",
                 resizeMode: "contain",
                 backgroundColor: colors.card,
+                borderRadius: 18,
               }}
             />
           )}

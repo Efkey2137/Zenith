@@ -16,7 +16,7 @@ export default function SectionPage() {
   const { catalog } = useLibrary();
   const section = catalog?.sections.find((s) => s.slug === slug);
   return (
-    <Screen>
+    <Screen withHeader>
       {!catalog ? (
         <LibraryStatus />
       ) : !section ? (
@@ -36,6 +36,8 @@ export default function SectionPage() {
                 borderWidth: 1,
                 borderColor: colors.border,
                 padding: 24,
+                borderRadius: 18,
+                backgroundColor: colors.card,
                 lineHeight: 25,
               }}
             >

@@ -1,10 +1,25 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LibraryProvider } from "@/lib/library";
-import { colors, serif } from "@/components/ui";
+import {
+  colors,
+  serif,
+  MotionProvider,
+  useReducedMotion,
+} from "@/components/ui";
 export default function Layout() {
   return (
-    <LibraryProvider>
+    <MotionProvider>
+      <LibraryProvider>
+        <Navigation />
+      </LibraryProvider>
+    </MotionProvider>
+  );
+}
+function Navigation() {
+  const reduced = useReducedMotion();
+  return (
+    <>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -13,6 +28,7 @@ export default function Layout() {
           headerTitleStyle: { fontFamily: serif },
           contentStyle: { backgroundColor: colors.background },
           headerShadowVisible: false,
+          animation: reduced ? "none" : "default",
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -32,6 +48,6 @@ export default function Layout() {
           }}
         />
       </Stack>
-    </LibraryProvider>
+    </>
   );
 }

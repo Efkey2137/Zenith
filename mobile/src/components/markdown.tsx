@@ -1,7 +1,7 @@
 import { memo } from "react";
 import Markdown from "react-native-markdown-display";
 import { Linking } from "react-native";
-import { serif } from "./ui";
+import { colors, serif } from "./ui";
 
 export const ChapterText = memo(function ChapterText({
   content,
@@ -14,7 +14,7 @@ export const ChapterText = memo(function ChapterText({
   leading?: number;
   paper?: boolean;
 }) {
-  const ink = paper ? "#30291f" : "#ddd8d0";
+  const ink = paper ? "#30291f" : colors.foreground;
   return (
     <Markdown
       onLinkPress={(url) => {
@@ -52,23 +52,25 @@ export const ChapterText = memo(function ChapterText({
           fontFamily: serif,
         },
         blockquote: {
-          backgroundColor: paper ? "#ded5c4" : "#171717",
+          backgroundColor: paper ? "#ded5c4" : colors.card,
           borderLeftColor: ink,
           borderLeftWidth: 2,
           padding: 14,
+          borderTopRightRadius: 10,
+          borderBottomRightRadius: 10,
         },
         link: { color: ink, textDecorationLine: "underline" },
         hr: {
-          backgroundColor: paper ? "#30291f30" : "#303030",
+          backgroundColor: paper ? "#30291f30" : colors.border,
           marginVertical: 24,
         },
         code_inline: {
-          backgroundColor: paper ? "#ded5c4" : "#171717",
+          backgroundColor: paper ? "#ded5c4" : colors.card,
           color: ink,
         },
-        fence: { backgroundColor: paper ? "#ded5c4" : "#171717", color: ink },
-        table: { borderColor: paper ? "#30291f30" : "#303030" },
-        tr: { borderColor: paper ? "#30291f30" : "#303030" },
+        fence: { backgroundColor: paper ? "#ded5c4" : colors.card, color: ink },
+        table: { borderColor: paper ? "#30291f30" : colors.border },
+        tr: { borderColor: paper ? "#30291f30" : colors.border },
       }}
     >
       {content}

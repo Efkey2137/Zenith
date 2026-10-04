@@ -1,28 +1,35 @@
-import {
-  ScrollView,
-  Text,
-  View,
-  RefreshControl,
-  Pressable,
-} from "react-native";
+import { ScrollView, Text, View, RefreshControl } from "react-native";
 import { router } from "expo-router";
-import { ArrowRight, BookOpen, Compass, Users } from "lucide-react-native";
+import {
+  ArrowUpRight,
+  ChevronRight,
+  Compass,
+  Users,
+} from "lucide-react-native";
 import { useLibrary } from "@/lib/library";
+import { BranchMark, BookCover } from "@/components/book-mark";
 import {
   Screen,
   ui,
   colors,
   serif,
-  Eyebrow,
   Body,
   Button,
   LibraryStatus,
+  Touch,
 } from "@/components/ui";
+
 export default function Home() {
   const { catalog, reading, loading, refresh } = useLibrary();
   const chapters = catalog?.sagas.flatMap((s) => s.chapters) ?? [];
-  const first = chapters[0];
   const last = chapters.find((c) => c.slug === reading.lastSlug);
+  const current = last ?? chapters[0];
+  const saga = catalog?.sagas.find((s) =>
+    s.chapters.some((c) => c.slug === current?.slug),
+  );
+  const progress = current
+    ? Math.round((reading.progress[current.slug] ?? 0) * 100)
+    : 0;
   return (
     <Screen>
       {!catalog ? (
@@ -33,117 +40,241 @@ export default function Home() {
             <RefreshControl
               refreshing={loading}
               onRefresh={() => void refresh()}
-              tintColor={colors.foreground}
+              tintColor={colors.accent}
             />
           }
-          contentContainerStyle={[ui.content, { paddingTop: 48 }]}
+          contentContainerStyle={[ui.content, { gap: 28, paddingTop: 26 }]}
         >
-          <Eyebrow>Powieść i jej świat</Eyebrow>
+          <View style={[ui.row, { justifyContent: "space-between" }]}>
+            <View style={{ flex: 1, gap: 6 }}>
+              <Text
+                accessibilityRole="header"
+                style={{
+                  fontFamily: serif,
+                  fontSize: 48,
+                  letterSpacing: -1.5,
+                  color: colors.foreground,
+                }}
+              >
+                Zenith
+              </Text>
+              <Text style={{ color: colors.brass, fontSize: 13 }}>
+                Powieść i jej świat
+              </Text>
+            </View>
+            <BranchMark size={74} />
+          </View>
           <Text
-            accessibilityRole="header"
             style={{
               fontFamily: serif,
-              fontSize: 60,
-              letterSpacing: 7,
-              color: colors.foreground,
-              marginTop: 10,
-            }}
-          >
-            ZENITH
-          </Text>
-          <Text
-            style={{
-              fontFamily: serif,
-              fontSize: 25,
-              lineHeight: 35,
+              fontSize: 23,
+              lineHeight: 32,
               color: colors.muted,
+              marginTop: -8,
             }}
           >
             Kroniki mrocznego{"\n"}słowiańskiego świata.
           </Text>
-          <Button
-            onPress={() =>
-              first
-                ? router.push(`/chapter/${first.slug}`)
-                : router.push("/chapters")
-            }
-          >
-            {first ? "Zacznij czytać  →" : "Przejdź do rozdziałów  →"}
-          </Button>
-          <Text style={{ color: colors.muted, fontSize: 12 }}>
-            Rozdziały: {chapters.length} · Sagi: {catalog.sagas.length}
-          </Text>
-          {last && (
-            <View style={[ui.card, { marginTop: 12 }]}>
-              <Eyebrow>Twoja ostatnia lektura</Eyebrow>
+          <View style={[ui.card, { gap: 20 }]}>
+            <View style={[ui.row, { alignItems: "flex-start", gap: 18 }]}>
+              <BookCover />
+              <View style={{ flex: 1, gap: 8 }}>
+                <Text style={{ fontSize: 13, color: colors.brass }}>
+                  {last ? "Twoja lektura" : "Otwórz książkę"}
+                </Text>
+                <Text
+                  style={{
+                    color: colors.foreground,
+                    fontFamily: serif,
+                    fontSize: 24,
+                    lineHeight: 31,
+                  }}
+                >
+                  {current?.title ?? "Biblioteka Zenith"}
+                </Text>
+                {current && (
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 19,
+                      color: colors.muted,
+                    }}
+                  >
+                    {saga?.title} · Rozdział {current.number}
+                  </Text>
+                )}
+              </View>
+            </View>
+            {last && (
+              <View style={{ gap: 8 }}>
+                <View
+                  accessibilityRole="progressbar"
+                  accessibilityLabel="Postęp ostatniej lektury"
+                  accessibilityValue={{ min: 0, max: 100, now: progress }}
+                  style={{
+                    height: 3,
+                    borderRadius: 2,
+                    backgroundColor: colors.border,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      height: 3,
+                      width: `${progress}%`,
+                      backgroundColor: colors.accent,
+                    }}
+                  />
+                </View>
+                <Text style={{ fontSize: 12, color: colors.muted }}>
+                  {progress}% przeczytane
+                </Text>
+              </View>
+            )}
+            <Button
+              onPress={() =>
+                current
+                  ? router.push(`/chapter/${current.slug}`)
+                  : router.push("/chapters")
+              }
+            >
+              {last
+                ? "Czytaj dalej"
+                : current
+                  ? "Zacznij czytać"
+                  : "Otwórz bibliotekę"}
+            </Button>
+          </View>
+          <View style={{ gap: 4 }}>
+            <View style={[ui.row, { justifyContent: "space-between" }]}>
               <Text
+                accessibilityRole="header"
                 style={{
                   fontFamily: serif,
                   fontSize: 23,
                   color: colors.foreground,
                 }}
               >
-                {last.title}
+                Twoja biblioteka
               </Text>
-              <Body>
-                {Math.round((reading.progress[last.slug] ?? 0) * 100)}%
-                przeczytane
-              </Body>
-              <Button
-                secondary
-                onPress={() => router.push(`/chapter/${last.slug}`)}
+              <Touch
+                accessibilityRole="button"
+                accessibilityLabel="Otwórz spis wszystkich rozdziałów"
+                onPress={() => router.push("/chapters")}
+                style={[ui.row, { minHeight: 44, gap: 4 }]}
               >
-                Wróć do lektury →
-              </Button>
+                <Text style={{ color: colors.accent, fontSize: 14 }}>Spis</Text>
+                <ArrowUpRight size={16} color={colors.accent} />
+              </Touch>
             </View>
-          )}
-          <Eyebrow>Poznaj Zenith</Eyebrow>
-          {(
-            [
-              {
-                title: "Rozdziały",
-                text: "Kolejne sagi, jeden spis.",
-                href: "/chapters",
-                Icon: BookOpen,
-              },
-              {
-                title: "Postacie",
-                text: "Bohaterowie i ich historie.",
-                href: "/characters",
-                Icon: Users,
-              },
-              {
-                title: "Świat",
-                text: "Atlas i zasady mocy.",
-                href: "/world",
-                Icon: Compass,
-              },
-            ] as const
-          ).map(({ title, text, href, Icon }) => (
-            <Pressable
-              key={title}
-              accessibilityRole="button"
-              accessibilityLabel={title}
-              onPress={() => router.push(href)}
-              style={ui.card}
-            >
-              <View style={ui.row}>
-                <Icon color={colors.muted} size={20} strokeWidth={1.3} />
-                <Text
+            {catalog.sagas.map((s) => (
+              <Touch
+                key={s.slug}
+                accessibilityRole="button"
+                accessibilityLabel={`${s.title}, ${s.chapters.length} rozdziałów`}
+                onPress={() =>
+                  router.push({
+                    pathname: "/chapters",
+                    params: { saga: s.slug },
+                  })
+                }
+                style={[ui.row, ui.divider]}
+              >
+                <View
                   style={{
-                    fontFamily: serif,
-                    fontSize: 24,
-                    color: colors.foreground,
+                    width: 3,
+                    height: 32,
+                    backgroundColor: colors.brass,
+                    borderRadius: 2,
+                    marginRight: 2,
+                  }}
+                />
+                <View style={{ flex: 1, gap: 5 }}>
+                  <Text
+                    style={{
+                      fontFamily: serif,
+                      fontSize: 20,
+                      color: colors.foreground,
+                    }}
+                  >
+                    {s.title}
+                  </Text>
+                  <Text style={{ fontSize: 13, color: colors.muted }}>
+                    Rozdziały: {s.chapters.length}
+                  </Text>
+                </View>
+                <ChevronRight size={18} color={colors.muted} />
+              </Touch>
+            ))}
+            {!catalog.sagas.length && (
+              <Body>Opublikowane sagi pojawią się tutaj.</Body>
+            )}
+          </View>
+          <View style={{ gap: 16 }}>
+            <Text
+              accessibilityRole="header"
+              style={{
+                fontFamily: serif,
+                fontSize: 23,
+                color: colors.foreground,
+              }}
+            >
+              Poza rozdziałami
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+              {(
+                [
+                  {
+                    title: "Postacie",
+                    detail: "Bohaterowie i historie",
+                    href: "/characters",
+                    Icon: Users,
+                  },
+                  {
+                    title: "Świat",
+                    detail: "Atlas i zasady mocy",
+                    href: "/world",
+                    Icon: Compass,
+                  },
+                ] as const
+              ).map(({ title, detail, href, Icon }) => (
+                <Touch
+                  key={title}
+                  accessibilityRole="button"
+                  accessibilityLabel={title}
+                  onPress={() => router.push(href)}
+                  style={{
+                    backgroundColor: colors.card,
+                    borderRadius: 18,
+                    padding: 18,
+                    gap: 12,
                     flex: 1,
+                    minWidth: 130,
                   }}
                 >
-                  {title}
-                </Text>
-                <ArrowRight color={colors.muted} size={18} />
-              </View>
-              <Body>{text}</Body>
-            </Pressable>
-          ))}
+                  <Icon color={colors.accent} size={23} strokeWidth={1.6} />
+                  <Text
+                    style={{
+                      fontFamily: serif,
+                      fontSize: 21,
+                      color: colors.foreground,
+                    }}
+                  >
+                    {title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 19,
+                      color: colors.muted,
+                    }}
+                  >
+                    {detail}
+                  </Text>
+                </Touch>
+              ))}
+            </View>
+          </View>
         </ScrollView>
       )}
     </Screen>

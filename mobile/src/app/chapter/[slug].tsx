@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
-  Pressable,
   ScrollView,
   Text,
   View,
@@ -13,19 +12,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import {
-  Bookmark,
-  Check,
-  Download,
-  Minus,
-  Plus,
-  Settings2,
-} from "lucide-react-native";
+import { Bookmark, Check, Download, Settings2 } from "lucide-react-native";
 import { ApiError, fetchChapter } from "@/lib/api";
 import { useLibrary } from "@/lib/library";
 import { ratio, type Chapter } from "@/lib/models";
 import { ChapterText } from "@/components/markdown";
-import { ui, colors, serif, Eyebrow, Body, Button } from "@/components/ui";
+import { ui, colors, serif, Body, Button, Touch } from "@/components/ui";
+import { ReaderSettings } from "@/components/reader-settings";
 
 export default function ChapterPage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -175,7 +168,8 @@ function Reader({ chapter, offline }: { chapter: Chapter; offline: boolean }) {
     );
   }
   function changeSettings(update: Partial<typeof settings>) {
-    restored.current = false;
+    if (update.size !== undefined || update.leading !== undefined)
+      restored.current = false;
     setReading((current) => ({
       ...current,
       settings: { ...current.settings, ...update },
@@ -200,6 +194,35 @@ function Reader({ chapter, offline }: { chapter: Chapter; offline: boolean }) {
       setSaving(false);
     }
   }
+  function saveBookmark() {
+    setReading((current) => ({
+      ...current,
+      bookmarks: { ...current.bookmarks, [chapter.slug]: position.current },
+    }));
+    setNotice("Zapisano zakładkę.");
+  }
+  function openBookmark() {
+    if (bookmark === undefined) {
+      saveBookmark();
+      return;
+    }
+    Alert.alert(
+      "Zakładka",
+      `Zapisane miejsce: ${Math.round(bookmark * 100)}% rozdziału.`,
+      [
+        {
+          text: "Wróć do zakładki",
+          onPress: () => {
+            scrollTo(bookmark);
+            setNotice("Powrót do zakładki.");
+          },
+        },
+        { text: "Zapisz w tym miejscu", onPress: saveBookmark },
+        { text: "Anuluj", style: "cancel" },
+      ],
+    );
+  }
+  const border = paper ? "#30291f30" : colors.border;
   return (
     <SafeAreaView
       edges={["bottom", "left", "right"]}
@@ -222,16 +245,13 @@ function Reader({ chapter, offline }: { chapter: Chapter; offline: boolean }) {
           max: 100,
           now: Math.round(progress * 100),
         }}
-        style={{
-          height: 2,
-          backgroundColor: paper ? "#30291f30" : colors.border,
-        }}
+        style={{ height: 2, backgroundColor: border }}
       >
         <View
           style={{
             height: 2,
             width: `${Math.round(progress * 100)}%`,
-            backgroundColor: ink,
+            backgroundColor: paper ? ink : colors.accent,
           }}
         />
       </View>
@@ -249,15 +269,21 @@ function Reader({ chapter, offline }: { chapter: Chapter; offline: boolean }) {
         }}
         contentContainerStyle={[
           ui.content,
-          { paddingTop: 30, gap: 18, paddingBottom: 50 },
+          { paddingTop: 28, gap: 18, paddingBottom: 40 },
         ]}
       >
         {offline && (
-          <Text style={{ fontSize: 12, color: muted }}>
+          <Text style={{ fontSize: 13, color: muted }}>
             Pobrana kopia · czytasz bez połączenia
           </Text>
         )}
-        <Text style={[ui.eyebrow, { color: muted }]}>
+        <Text
+          style={{
+            fontSize: 13,
+            lineHeight: 20,
+            color: paper ? muted : colors.brass,
+          }}
+        >
           {chapter.sagaTitle} · Rozdział {chapter.number}
         </Text>
         <Text
@@ -265,178 +291,24 @@ function Reader({ chapter, offline }: { chapter: Chapter; offline: boolean }) {
           selectable
           style={{
             fontFamily: serif,
-            fontSize: 34,
-            lineHeight: 43,
+            fontSize: 35,
+            lineHeight: 44,
+            letterSpacing: -0.5,
             color: ink,
           }}
         >
           {chapter.title}
         </Text>
-        <Text style={{ fontSize: 12, color: muted }}>
-          Około {minutes} min czytania · {Math.round(progress * 100)}%
+        <Text style={{ fontSize: 13, color: muted, marginBottom: 12 }}>
+          Około {minutes} min czytania
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Ustawienia czytania"
-          accessibilityState={{ expanded: showSettings }}
-          onPress={() => setShowSettings(!showSettings)}
-          style={[
-            ui.row,
-            {
-              minHeight: 48,
-              borderTopWidth: 1,
-              borderBottomWidth: 1,
-              borderColor: paper ? "#30291f30" : colors.border,
-            },
-          ]}
-        >
-          <Settings2 size={17} color={muted} />
-          <Text style={{ color: muted, fontSize: 14 }}>
-            Ustawienia czytania
-          </Text>
-        </Pressable>
-        {showSettings && (
-          <View style={{ gap: 16 }}>
-            <Text style={{ color: muted }}>Wielkość tekstu</Text>
-            <View style={ui.row}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Zmniejsz tekst"
-                disabled={settings.size <= 17}
-                onPress={() => changeSettings({ size: settings.size - 2 })}
-                style={{ padding: 14, opacity: settings.size <= 17 ? 0.4 : 1 }}
-              >
-                <Minus color={ink} size={18} />
-              </Pressable>
-              <Text style={{ color: ink }}>{settings.size}</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Powiększ tekst"
-                disabled={settings.size >= 25}
-                onPress={() => changeSettings({ size: settings.size + 2 })}
-                style={{ padding: 14, opacity: settings.size >= 25 ? 0.4 : 1 }}
-              >
-                <Plus color={ink} size={18} />
-              </Pressable>
-            </View>
-            <Text style={{ color: muted }}>Odstępy między wierszami</Text>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {([1.6, 1.9, 2.2] as const).map((value, i) => (
-                <Pressable
-                  key={value}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: settings.leading === value }}
-                  onPress={() => changeSettings({ leading: value })}
-                  style={{
-                    padding: 13,
-                    borderWidth: 1,
-                    borderColor: settings.leading === value ? ink : muted,
-                  }}
-                >
-                  <Text style={{ color: ink }}>
-                    {["Zwarte", "Zwykłe", "Szerokie"][i]}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={paper ? "Ciemne tło" : "Jasny papier"}
-              onPress={() => changeSettings({ paper: !paper })}
-              style={{ padding: 14, borderWidth: 1, borderColor: muted }}
-            >
-              <Text style={{ color: ink }}>
-                {paper ? "Ciemne tło" : "Jasny papier"}
-              </Text>
-            </Pressable>
-          </View>
-        )}
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Zapisz zakładkę"
-            onPress={() => {
-              setReading((current) => ({
-                ...current,
-                bookmarks: {
-                  ...current.bookmarks,
-                  [chapter.slug]: position.current,
-                },
-              }));
-              setNotice("Zapisano zakładkę.");
-            }}
-            style={[
-              ui.row,
-              {
-                padding: 12,
-                minHeight: 48,
-                borderWidth: 1,
-                borderColor: muted,
-              },
-            ]}
-          >
-            <Bookmark size={15} color={ink} />
-            <Text style={{ color: ink }}>Zakładka</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={
-              downloads[chapter.slug]
-                ? "Usuń pobraną kopię"
-                : "Pobierz do czytania offline"
-            }
-            disabled={saving}
-            onPress={() => void toggleDownload()}
-            style={[
-              ui.row,
-              {
-                padding: 12,
-                minHeight: 48,
-                borderWidth: 1,
-                borderColor: muted,
-                opacity: saving ? 0.4 : 1,
-              },
-            ]}
-          >
-            <Download size={15} color={ink} />
-            <Text style={{ color: ink }}>
-              {saving
-                ? "Zapisywanie…"
-                : downloads[chapter.slug]
-                  ? "Pobrano ✓"
-                  : "Pobierz"}
-            </Text>
-          </Pressable>
-        </View>
-        {bookmark !== undefined && (
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              scrollTo(bookmark);
-              setNotice("Powrót do zakładki.");
-            }}
-            style={{ minHeight: 44, justifyContent: "center" }}
-          >
-            <Text style={{ color: muted }}>
-              Wróć do zakładki ({Math.round(bookmark * 100)}%) →
-            </Text>
-          </Pressable>
-        )}
-        {!!notice && (
-          <Text
-            accessibilityLiveRegion="polite"
-            style={{ color: muted, fontSize: 12 }}
-          >
-            {notice}
-          </Text>
-        )}
         <ChapterText
           content={chapter.content}
           size={settings.size}
           leading={settings.leading}
           paper={paper}
         />
-        <Pressable
+        <Touch
           accessibilityRole="button"
           accessibilityLabel="Oznacz jako przeczytany"
           onPress={() => {
@@ -449,59 +321,199 @@ function Reader({ chapter, offline }: { chapter: Chapter; offline: boolean }) {
           }}
           style={[
             ui.row,
-            { minHeight: 48, padding: 12, borderWidth: 1, borderColor: muted },
+            {
+              minHeight: 52,
+              padding: 16,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: border,
+              justifyContent: "center",
+            },
           ]}
         >
-          <Check size={16} color={ink} />
-          <Text style={{ color: ink }}>Oznacz jako przeczytany</Text>
-        </Pressable>
+          <Check size={18} color={ink} />
+          <Text style={{ color: ink, fontSize: 15, flexShrink: 1 }}>
+            Oznacz jako przeczytany
+          </Text>
+        </Touch>
         <View
           style={{
             gap: 20,
             borderTopWidth: 1,
-            borderColor: muted,
+            borderColor: border,
             paddingTop: 24,
           }}
         >
           {chapter.previous && (
-            <Pressable
+            <Touch
               accessibilityRole="button"
               onPress={() =>
                 router.replace(`/chapter/${chapter.previous!.slug}`)
               }
-              style={{ minHeight: 48, gap: 8 }}
+              style={{ minHeight: 52, gap: 8 }}
             >
-              <Eyebrow>Poprzedni rozdział</Eyebrow>
-              <Text style={{ fontFamily: serif, fontSize: 19, color: ink }}>
+              <Text style={{ fontSize: 13, color: muted }}>
+                Poprzedni rozdział
+              </Text>
+              <Text
+                style={{
+                  fontFamily: serif,
+                  fontSize: 21,
+                  lineHeight: 29,
+                  color: ink,
+                }}
+              >
                 ← {chapter.previous.title}
               </Text>
-            </Pressable>
+            </Touch>
           )}
           {chapter.next ? (
-            <Pressable
+            <Touch
               accessibilityRole="button"
               onPress={() => router.replace(`/chapter/${chapter.next!.slug}`)}
-              style={{ minHeight: 48, gap: 8 }}
+              style={{ minHeight: 52, gap: 8 }}
             >
-              <Eyebrow>Następny rozdział</Eyebrow>
-              <Text style={{ fontFamily: serif, fontSize: 19, color: ink }}>
+              <Text style={{ fontSize: 13, color: muted }}>
+                Następny rozdział
+              </Text>
+              <Text
+                style={{
+                  fontFamily: serif,
+                  fontSize: 21,
+                  lineHeight: 29,
+                  color: ink,
+                }}
+              >
                 {chapter.next.title} →
               </Text>
-            </Pressable>
+            </Touch>
           ) : (
             <Text style={{ color: muted }}>
               Jesteś na końcu opublikowanej historii.
             </Text>
           )}
-          <Pressable
+          <Touch
             accessibilityRole="button"
             onPress={() => router.replace("/chapters")}
-            style={{ minHeight: 44 }}
+            style={{ minHeight: 44, justifyContent: "center" }}
           >
-            <Text style={{ color: muted }}>Wróć do spisu →</Text>
-          </Pressable>
+            <Text style={{ color: muted, fontSize: 15 }}>Wróć do spisu →</Text>
+          </Touch>
         </View>
       </ScrollView>
+      <View
+        style={{
+          borderTopWidth: 1,
+          borderColor: border,
+          paddingHorizontal: 20,
+          paddingTop: 10,
+          paddingBottom: 4,
+          gap: 6,
+          backgroundColor: background,
+        }}
+      >
+        <View
+          style={[ui.row, { justifyContent: "space-between", minHeight: 21 }]}
+        >
+          <Text
+            accessibilityLiveRegion="polite"
+            style={{ color: muted, fontSize: 12, flex: 1 }}
+          >
+            {notice ||
+              (bookmark !== undefined
+                ? `Zakładka: ${Math.round(bookmark * 100)}%`
+                : "Miejsce zapisuje się automatycznie")}
+          </Text>
+          <Text
+            style={{
+              color: muted,
+              fontSize: 12,
+              fontVariant: ["tabular-nums"],
+            }}
+          >
+            {Math.round(progress * 100)}%
+          </Text>
+        </View>
+        <View style={[ui.row, { gap: 6 }]}>
+          <Touch
+            accessibilityRole="button"
+            accessibilityLabel="Ustawienia czytania"
+            accessibilityState={{ expanded: showSettings }}
+            onPress={() => setShowSettings(true)}
+            style={{
+              flex: 1,
+              minHeight: 54,
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 5,
+            }}
+          >
+            <Settings2 size={21} color={ink} />
+            <Text style={{ color: muted, fontSize: 12 }}>Wygląd</Text>
+          </Touch>
+          <Touch
+            accessibilityRole="button"
+            accessibilityLabel={
+              bookmark === undefined
+                ? "Zapisz zakładkę w tym miejscu"
+                : "Otwórz zapisaną zakładkę"
+            }
+            onPress={openBookmark}
+            style={{
+              flex: 1,
+              minHeight: 54,
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 5,
+            }}
+          >
+            <Bookmark
+              size={21}
+              color={ink}
+              fill={bookmark !== undefined ? ink : "none"}
+            />
+            <Text style={{ color: muted, fontSize: 12 }}>Zakładka</Text>
+          </Touch>
+          <Touch
+            accessibilityRole="button"
+            accessibilityLabel={
+              downloads[chapter.slug]
+                ? "Usuń pobraną kopię"
+                : "Pobierz do czytania offline"
+            }
+            disabled={saving}
+            onPress={() => void toggleDownload()}
+            style={{
+              flex: 1,
+              minHeight: 54,
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 5,
+            }}
+          >
+            {saving ? (
+              <ActivityIndicator size="small" color={ink} />
+            ) : downloads[chapter.slug] ? (
+              <Check size={21} color={ink} />
+            ) : (
+              <Download size={21} color={ink} />
+            )}
+            <Text style={{ color: muted, fontSize: 12 }}>
+              {saving
+                ? "Zapis…"
+                : downloads[chapter.slug]
+                  ? "Pobrano"
+                  : "Pobierz"}
+            </Text>
+          </Touch>
+        </View>
+      </View>
+      <ReaderSettings
+        visible={showSettings}
+        settings={settings}
+        onChange={changeSettings}
+        onClose={() => setShowSettings(false)}
+      />
     </SafeAreaView>
   );
 }

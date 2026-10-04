@@ -2,6 +2,8 @@
 
 Natywna aplikacja React Native / Expo SDK 57. Zachowuje ciemny styl Zenith, szeryfową typografię i treści z obecnej biblioteki. Ekrany są natywne; czytnik nie jest stroną osadzoną w przeglądarce.
 
+Odświeżony wygląd „Nocny las” łączy ciemną zieleń, jasny tekst i przygaszony mosiądz. Start eksponuje ostatnią lekturę i pozwala otworzyć konkretną sagę. Listy mają wyszukiwanie, wyraźne filtry, postęp i oznaczenia pobrania. Czytnik ma stały dolny pasek, natywny panel wyglądu oraz menu powrotu do zakładki. Interfejs respektuje systemowe ograniczenie ruchu. Paleta, typografia i założenia są w [DESIGN.md](./DESIGN.md).
+
 ## Uruchomienie na telefonie
 
 1. Otwórz `Start-Zenith.command` na Macu. Przy pierwszym uruchomieniu zaloguj się w terminalu na to samo konto Expo co w aplikacji Expo Go. Nie wpisuj hasła w rozmowie ani w repozytorium.
@@ -20,11 +22,13 @@ Expo opisuje ten sposób testowania w [instrukcji uruchomienia](https://docs.exp
 
 ## Co można testować
 
-- Cztery ekrany: Zenith, Rozdziały, Postacie i Świat.
+- Cztery ekrany: Start, Rozdziały, Postacie i Świat.
 - Wyszukiwanie rozdziałów i postaci bez polskich znaków, filtrowanie sag i frakcji.
 - Czytnik Markdown, wielkość tekstu, interlinia, jasny papier, pamięć miejsca, zakładki i oznaczenie przeczytania.
 - Pobieranie rozdziałów do czytania offline oraz usuwanie kopii z urządzenia.
 - Biografie, atlas, system mocy i informacje o autorze pobierane z istniejącej biblioteki.
+
+W Expo Go wybierz „Reload”, aby zobaczyć zmiany wyglądu w już otwartym projekcie. Pierwsze naciśnięcie „Zakładka” zapisuje miejsce; kolejne daje wybór powrotu albo zapisania nowego miejsca.
 
 Postęp i ustawienia zapisują się na urządzeniu, niezależnie od wersji przeglądarkowej. Treść rozdziału zapisuje się offline dopiero po wybraniu „Pobierz”. Biografie wymagają internetu.
 

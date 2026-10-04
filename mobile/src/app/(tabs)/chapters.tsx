@@ -1,15 +1,7 @@
 import { useMemo, useState } from "react";
-import {
-  FlatList,
-  Text,
-  View,
-  TextInput,
-  Pressable,
-  ScrollView,
-  RefreshControl,
-} from "react-native";
-import { router } from "expo-router";
-import { Download, ChevronRight } from "lucide-react-native";
+import { FlatList, Text, View, RefreshControl } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Download, ChevronRight, Check } from "lucide-react-native";
 import { useLibrary } from "@/lib/library";
 import { normalize } from "@/lib/models";
 import {
@@ -17,15 +9,18 @@ import {
   ui,
   colors,
   serif,
-  Eyebrow,
   Title,
   Body,
   LibraryStatus,
+  Touch,
+  FilterBar,
+  SearchField,
 } from "@/components/ui";
+
 export default function Chapters() {
   const { catalog, reading, downloads, loading, refresh } = useLibrary();
+  const { saga = "" } = useLocalSearchParams<{ saga?: string }>();
   const [search, setSearch] = useState("");
-  const [saga, setSaga] = useState("");
   const [savedOnly, setSavedOnly] = useState(false);
   const rows = useMemo(
     () =>
@@ -53,128 +48,167 @@ export default function Chapters() {
           data={rows}
           keyExtractor={(c) => c.slug}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           refreshControl={
             <RefreshControl
               refreshing={loading}
               onRefresh={() => void refresh()}
-              tintColor={colors.foreground}
+              tintColor={colors.accent}
             />
           }
-          contentContainerStyle={ui.content}
+          contentContainerStyle={[ui.content, { gap: 0 }]}
           ListHeaderComponent={
-            <View style={{ gap: 18 }}>
-              <Eyebrow>Biblioteka</Eyebrow>
+            <View style={{ gap: 18, paddingBottom: 12 }}>
               <Title>Rozdziały</Title>
-              <Body>Wybierz sagę i wejdź w opowieść.</Body>
-              <TextInput
+              <Body>Twoje miejsce w opowieści.</Body>
+              <SearchField
                 accessibilityLabel="Szukaj rozdziału"
-                placeholder="Tytuł lub numer…"
-                placeholderTextColor={colors.muted}
-                style={ui.input}
+                placeholder="Tytuł lub numer rozdziału"
                 value={search}
                 onChangeText={setSearch}
-                clearButtonMode="while-editing"
               />
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8 }}
+              <FilterBar
+                options={[
+                  { key: "", label: "Wszystkie" },
+                  ...catalog.sagas.map((s) => ({
+                    key: s.slug,
+                    label: s.title,
+                  })),
+                ]}
+                selected={saga}
+                onSelect={(key) => router.setParams({ saga: key })}
+              />
+              <View
+                style={[
+                  ui.row,
+                  { justifyContent: "space-between", flexWrap: "wrap" },
+                ]}
               >
-                {[{ slug: "", title: "Wszystkie" }, ...catalog.sagas].map(
-                  (s) => (
-                    <Pressable
-                      key={s.slug}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: saga === s.slug }}
-                      onPress={() => setSaga(s.slug)}
-                      style={{
-                        paddingVertical: 12,
-                        paddingHorizontal: 14,
-                        borderWidth: 1,
-                        borderColor:
-                          saga === s.slug ? colors.foreground : colors.border,
-                        borderRadius: 3,
-                      }}
-                    >
-                      <Text style={{ color: colors.foreground, fontSize: 13 }}>
-                        {s.title}
-                      </Text>
-                    </Pressable>
-                  ),
-                )}
-              </ScrollView>
-              <Pressable
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: savedOnly }}
-                onPress={() => setSavedOnly(!savedOnly)}
-                style={[ui.row, { minHeight: 44 }]}
-              >
-                <Download
-                  size={16}
-                  color={savedOnly ? colors.foreground : colors.muted}
-                />
-                <Text
-                  style={{
-                    color: savedOnly ? colors.foreground : colors.muted,
-                  }}
+                <Touch
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: savedOnly }}
+                  onPress={() => setSavedOnly(!savedOnly)}
+                  style={[ui.row, { minHeight: 44, gap: 8, paddingRight: 10 }]}
                 >
-                  Tylko pobrane ({Object.keys(downloads).length})
+                  <View
+                    style={{
+                      width: 23,
+                      height: 23,
+                      borderRadius: 7,
+                      backgroundColor: savedOnly ? colors.accent : colors.card,
+                      borderWidth: 1,
+                      borderColor: savedOnly ? colors.accent : colors.border,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {savedOnly && <Check size={15} color={colors.background} />}
+                  </View>
+                  <Text
+                    style={{
+                      color: savedOnly ? colors.foreground : colors.muted,
+                      fontSize: 14,
+                    }}
+                  >
+                    Pobrane ({Object.keys(downloads).length})
+                  </Text>
+                </Touch>
+                <Text
+                  accessibilityLiveRegion="polite"
+                  style={{ color: colors.muted, fontSize: 13 }}
+                >
+                  Rozdziały: {rows.length}
                 </Text>
-              </Pressable>
-              <Text
-                accessibilityLiveRegion="polite"
-                style={{ color: colors.muted, fontSize: 12 }}
-              >
-                Rozdziały: {rows.length}
-              </Text>
+              </View>
             </View>
           }
           ListEmptyComponent={
-            <Body>
-              Nie znaleziono rozdziałów. Zmień wyszukiwanie lub filtr.
-            </Body>
+            <View style={{ paddingVertical: 30 }}>
+              <Body>
+                Nie znaleziono rozdziałów. Zmień wyszukiwanie lub filtr.
+              </Body>
+            </View>
           }
-          renderItem={({ item: c, index }) => (
-            <View>
-              {(index === 0 || rows[index - 1].sagaTitle !== c.sagaTitle) && (
-                <View style={{ marginTop: 20 }}>
-                  <Eyebrow>{c.sagaTitle}</Eyebrow>
-                </View>
-              )}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${c.number}. ${c.title}`}
-                onPress={() => router.push(`/chapter/${c.slug}`)}
-                style={[ui.divider, ui.row]}
-              >
-                <Text style={{ color: colors.muted, fontSize: 12, width: 24 }}>
-                  {String(c.number).padStart(2, "0")}
-                </Text>
-                <View style={{ flex: 1, gap: 7 }}>
+          renderItem={({ item: c, index }) => {
+            const p = reading.progress[c.slug];
+            return (
+              <View>
+                {(index === 0 || rows[index - 1].sagaTitle !== c.sagaTitle) && (
                   <Text
+                    accessibilityRole="header"
                     style={{
-                      fontFamily: serif,
-                      color: colors.foreground,
-                      fontSize: 19,
+                      marginTop: 20,
+                      marginBottom: 4,
+                      fontSize: 14,
+                      fontWeight: "600",
+                      color: colors.brass,
                     }}
                   >
-                    {c.title}
+                    {c.sagaTitle}
                   </Text>
-                  <View style={ui.row}>
-                    {reading.progress[c.slug] !== undefined && (
-                      <Text style={{ color: colors.muted, fontSize: 11 }}>
-                        {Math.round(reading.progress[c.slug] * 100)}%
+                )}
+                <Touch
+                  accessibilityRole="button"
+                  accessibilityLabel={`${c.number}. ${c.title}${p === 1 ? ", przeczytany" : ""}${downloads[c.slug] ? ", pobrany" : ""}`}
+                  onPress={() => router.push(`/chapter/${c.slug}`)}
+                  style={[ui.divider, ui.row, { gap: 14 }]}
+                >
+                  <View
+                    style={{
+                      minWidth: 34,
+                      minHeight: 38,
+                      borderRadius: 10,
+                      backgroundColor: colors.card,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      paddingHorizontal: 5,
+                    }}
+                  >
+                    {p === 1 ? (
+                      <Check size={17} color={colors.accent} />
+                    ) : (
+                      <Text
+                        style={{
+                          color: colors.muted,
+                          fontSize: 14,
+                          fontVariant: ["tabular-nums"],
+                        }}
+                      >
+                        {c.number}
                       </Text>
                     )}
-                    {downloads[c.slug] && (
-                      <Download size={12} color={colors.muted} />
+                  </View>
+                  <View style={{ flex: 1, gap: 7 }}>
+                    <Text
+                      style={{
+                        fontFamily: serif,
+                        color: colors.foreground,
+                        fontSize: 20,
+                        lineHeight: 27,
+                      }}
+                    >
+                      {c.title}
+                    </Text>
+                    {(p !== undefined || downloads[c.slug]) && (
+                      <View style={[ui.row, { gap: 8 }]}>
+                        {p !== undefined && (
+                          <Text style={{ color: colors.muted, fontSize: 12 }}>
+                            {p === 1
+                              ? "Przeczytany"
+                              : `${Math.round(p * 100)}% przeczytane`}
+                          </Text>
+                        )}
+                        {downloads[c.slug] && (
+                          <Download size={13} color={colors.accent} />
+                        )}
+                      </View>
                     )}
                   </View>
-                </View>
-                <ChevronRight size={16} color={colors.muted} />
-              </Pressable>
-            </View>
-          )}
+                  <ChevronRight size={17} color={colors.muted} />
+                </Touch>
+              </View>
+            );
+          }}
         />
       )}
     </Screen>
