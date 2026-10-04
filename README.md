@@ -14,6 +14,8 @@ Polskie kompendium powieści i czytnik w ciemnej, oszczędnej stylistyce. Next.j
 
 ## Uruchomienie lokalne
 
+Wersja React Native do testów na iPhonie znajduje się w `mobile/`. Instrukcja uruchomienia przez Expo Go: [mobile/README.md](mobile/README.md).
+
 Wymagany Node.js 24 LTS.
 
 ```sh
